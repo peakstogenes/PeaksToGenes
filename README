@@ -1,0 +1,115 @@
+PeaksToGenes
+
+
+INSTALLATION
+
+Installation of PeaksToGenes has been tested on Debian Linux
+and OS X. It is not configured to work with Windows.
+
+This module has two non-Perl dependencies: BedTools and SQLite3.
+
+To install BedTools:
+
+	On Debian Linux:
+
+		sudo apt-get install bedtools
+
+	On OS X:
+
+		Get the source package for the BedTools:
+		<http://code.google.com/p/bedtools/downloads/list>
+
+		tar -zxvf BEDTools.<version>.tar.gz 
+		cd BEDTools<version>
+		make clean
+		make all
+		ls bin
+
+		# copy the binaries to a directory in your PATH. e.g., 
+		sudo cp bin/* /usr/local/bin
+		# or
+		cp bin/* ~/bin
+
+To install SQLite3
+
+	On Debian Linux:
+
+		sudo apt-get install sqlite3
+
+	On OS X:
+
+		Download the precompiled binary from:
+		<http://www.sqlite.org/download.html>
+
+		Copy the binary file to your PATH e.g.
+		sudo cp sqlite3 /usr/local/bin/
+
+Perl Dependencies:
+
+PeaksToGenes has the following Perl module dependencies:
+
+ExtUtils::MakeMaker
+Test::More
+Moose
+Carp
+Moose::Util::TypeConstraints
+Data::Dumper
+MooseX::Getopt
+Moose::Role
+DBIx::Class::Schema
+utf8
+DBIx::Class::Core
+lib
+DBI
+DBD::SQLite
+
+To install on any system, use CPAN e.g.
+
+	$ sudo cpan
+	> install Moose
+	> install DBIx::Class::Schema
+	> install DBI
+	etc.
+
+To install this module, run the following commands:
+
+	perl Makefile.PL
+	make
+	make test
+
+There is no need to install this system-wide. It is a self-contained
+installation, therefore linkages to the databases will not be dynamically
+updated as of version 0.001.
+
+SUPPORT AND DOCUMENTATION
+
+After installing, you can find documentation for this module with the
+perldoc command.
+
+    perldoc PeaksToGenes
+
+You can also look for information at:
+
+    RT, CPAN's request tracker (report bugs here)
+        http://rt.cpan.org/NoAuth/Bugs.html?Dist=PeaksToGenes
+
+    AnnoCPAN, Annotated CPAN documentation
+        http://annocpan.org/dist/PeaksToGenes
+
+    CPAN Ratings
+        http://cpanratings.perl.org/d/PeaksToGenes
+
+    Search CPAN
+        http://search.cpan.org/dist/PeaksToGenes/
+
+
+LICENSE AND COPYRIGHT
+
+Copyright (C) 2012 Jason R. Dobson
+
+This program is free software; you can redistribute it and/or modify it
+under the terms of either: the GNU General Public License as published
+by the Free Software Foundation; or the Artistic License.
+
+See http://dev.perl.org/licenses/ for more information.
+
