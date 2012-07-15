@@ -3,6 +3,7 @@ use Moose::Role;
 use PeaksToGenes::Schema;
 use Carp;
 use Data::Dumper;
+use FindBin;
 
 =head1 NAME
 
@@ -23,10 +24,16 @@ annotated peaks.
 
 =cut
 
+sub _database_location {
+	my $self = shift;
+	my $db = "$FindBin::Bin/../db/peakstogenes.db";
+	return $db;
+}
 
 sub insert_peaks {
 	my ($self, $annotated_peaks, $species, $index_files, $table_name) = @_;
-	my $schema = PeaksToGenes::Schema->connect('dbi:SQLite:db/peakstogenes.db');
+	my $db = $self->_database_location;
+	my $schema = PeaksToGenes::Schema->connect("dbi:SQLite:$db");
 	my $database_name = $self->return_database($species);
 	my $array_table = $self->return_array($annotated_peaks, $index_files, $table_name);
 	my $array_summary = $self->return_summary($array_table);
@@ -41,7 +48,8 @@ sub return_contrast {
 	for (my $i = 0; $i < 15; $i++) {
 		$contrast_summary->[$i] = 0;
 	}
-	my $schema = PeaksToGenes::Schema->connect('dbi:SQLite:db/peakstogenes.db');
+	my $db = $self->_database_location;
+	my $schema = PeaksToGenes::Schema->connect("dbi:SQLite:$db");
 	my $database_name = $self->return_database($species);
 	print "\nTable name: $table_name\n\n";
 	print "\nDatabase name: $database_name\n\n";
@@ -217,7 +225,8 @@ sub return_summary {
 
 sub list_all_experiments {
 	my $self = shift;
-	my $schema = PeaksToGenes::Schema->connect('dbi:SQLite:db/peakstogenes.db');
+	my $db = $self->_database_location;
+	my $schema = PeaksToGenes::Schema->connect("dbi:SQLite:$db");
 	my $return;
 	$return->{'human database'} = {};
 	$return->{'mouse database'} = {};
@@ -247,7 +256,8 @@ sub list_all_experiments {
 sub delete_peaks {
 	my ($self, $name, $species) = @_;
 	my $database = $self->return_database($species);
-	my $schema = PeaksToGenes::Schema->connect('dbi:SQLite:db/peakstogenes.db');
+	my $db = $self->_database_location;
+	my $schema = PeaksToGenes::Schema->connect("dbi:SQLite:$db");
 	my $delete_rs = $schema->resultset($database)->search(
 		{
 			'name'	=>	$name

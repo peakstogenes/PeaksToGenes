@@ -21,7 +21,8 @@
 use strict;
 use warnings;
 use utf8;
-use lib '/home/jason/Documents/Programming/Perl/PeaksToGenes/lib';
+use FindBin;
+use lib "$FindBin::Bin/../lib";
 use PeaksToGenes;
 my $peaks_to_genes = PeaksToGenes->new_with_options();
 $peaks_to_genes->execute;
