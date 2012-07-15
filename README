@@ -49,6 +49,7 @@ Perl Dependencies:
 PeaksToGenes has the following Perl module dependencies:
 
 ExtUtils::MakeMaker
+FindBin
 Test::More
 Moose
 Carp
