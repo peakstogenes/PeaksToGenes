@@ -71,15 +71,10 @@ To install on any system, use CPAN e.g.
 	> install DBI
 	etc.
 
-To install this module, run the following commands:
 
-	perl Makefile.PL
-	make
-	make test
-
-There is no need to install this system-wide. It is a self-contained
-installation, therefore linkages to the databases will not be dynamically
-updated as of version 0.001.
+Once all of the dependencies have been updated, please add the path to $/PeaksToGenes/bin/
+to either your ~/.bashrc or ~/.bash_profile file to allow for system-wide calling of
+PeaksToGenes.
 
 SUPPORT AND DOCUMENTATION
 
