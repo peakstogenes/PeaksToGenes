@@ -184,6 +184,16 @@ sub execute {
 		print "User-defined summits file:\t\t$summits\n\n";
 		print "User-defined name of the experiment:\t$table_name\n\n";
 		print "Locations of index files being used to annotate summits:\n\n\t", join( "\n\t", @$index_files), "\n\n";
+		my $tables = $self->list_all_experiments();
+		if ( $species eq 'human' ) {
+			foreach my $experiment ( keys %{$tables->{'human database'}} ) {
+				croak "\n\nThe experiment $experiment is already annotated in the human database. If you would like to update this database, please delete the existing database first.\n\n" if $experiment eq $table_name;
+			}
+		} elsif ( $species eq 'mouse' ) {
+			foreach my $experiment ( keys %{$tables->{'mouse database'}} ) {
+				croak "\n\nThe experiment $experiment is already annotated in the mouse database. If you would like to update this database, please delete the existing database first.\n\n" if $experiment eq $table_name;
+			}
+		}
 		my $annotated_peaks = $self->annotate_peaks($summits, $index_files);
 		my ($peaks_to_genes_array, $peaks_to_genes_summary, $peaks_to_genes_header);
 		if ($create_database_flag) {

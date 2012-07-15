@@ -77,23 +77,46 @@ sub return_contrast {
 
 sub extract_contrast_rows {
 	my ($self, $result_rows, $species, $contrast_summary) = @_;
-	while ( my $result_row = $result_rows->next ) {
-		$contrast_summary->[0] += $result_row->human_100k_upstream_number_of_peaks;
-		$contrast_summary->[1] += $result_row->human_50k_upstream_number_of_peaks;
-		$contrast_summary->[2] += $result_row->human_25k_upstream_number_of_peaks;
-		$contrast_summary->[3] += $result_row->human_10k_upstream_number_of_peaks;
-		$contrast_summary->[4] += $result_row->human_5k_upstream_number_of_peaks;
-		$contrast_summary->[5] += $result_row->human_promoters_number_of_peaks;
-		$contrast_summary->[6] += $result_row->human_5prime_utr_number_of_peaks;
-		$contrast_summary->[7] += $result_row->human_exons_number_of_peaks;
-		$contrast_summary->[8] += $result_row->human_introns_number_of_peaks;
-		$contrast_summary->[9] += $result_row->human_3prime_utr_number_of_peaks;
-		$contrast_summary->[10] += $result_row->human_2_5k_downstream_number_of_peaks;
-		$contrast_summary->[11] += $result_row->human_5k_downstream_number_of_peaks;
-		$contrast_summary->[12] += $result_row->human_10k_downstream_number_of_peaks;
-		$contrast_summary->[13] += $result_row->human_25k_downstream_number_of_peaks;
-		$contrast_summary->[14] += $result_row->human_50k_downstream_number_of_peaks;
-		$contrast_summary->[15] += $result_row->human_100k_downstream_number_of_peaks;
+	if ( $species eq 'human' ) {
+		while ( my $result_row = $result_rows->next ) {
+			$contrast_summary->[0] += $result_row->human_100k_upstream_number_of_peaks;
+			$contrast_summary->[1] += $result_row->human_50k_upstream_number_of_peaks;
+			$contrast_summary->[2] += $result_row->human_25k_upstream_number_of_peaks;
+			$contrast_summary->[3] += $result_row->human_10k_upstream_number_of_peaks;
+			$contrast_summary->[4] += $result_row->human_5k_upstream_number_of_peaks;
+			$contrast_summary->[5] += $result_row->human_promoters_number_of_peaks;
+			$contrast_summary->[6] += $result_row->human_5prime_utr_number_of_peaks;
+			$contrast_summary->[7] += $result_row->human_exons_number_of_peaks;
+			$contrast_summary->[8] += $result_row->human_introns_number_of_peaks;
+			$contrast_summary->[9] += $result_row->human_3prime_utr_number_of_peaks;
+			$contrast_summary->[10] += $result_row->human_2_5k_downstream_number_of_peaks;
+			$contrast_summary->[11] += $result_row->human_5k_downstream_number_of_peaks;
+			$contrast_summary->[12] += $result_row->human_10k_downstream_number_of_peaks;
+			$contrast_summary->[13] += $result_row->human_25k_downstream_number_of_peaks;
+			$contrast_summary->[14] += $result_row->human_50k_downstream_number_of_peaks;
+			$contrast_summary->[15] += $result_row->human_100k_downstream_number_of_peaks;
+		}
+	} elsif ($species eq 'mouse') {
+		while ( my $result_row = $result_rows->next ) {
+			$contrast_summary->[0] += $result_row->mouse_100k_upstream_number_of_peaks;
+			$contrast_summary->[1] += $result_row->mouse_50k_upstream_number_of_peaks;
+			$contrast_summary->[2] += $result_row->mouse_25k_upstream_number_of_peaks;
+			$contrast_summary->[3] += $result_row->mouse_10k_upstream_number_of_peaks;
+			$contrast_summary->[4] += $result_row->mouse_5k_upstream_number_of_peaks;
+			$contrast_summary->[5] += $result_row->mouse_promoters_number_of_peaks;
+			$contrast_summary->[6] += $result_row->mouse_5prime_utr_number_of_peaks;
+			$contrast_summary->[7] += $result_row->mouse_exons_number_of_peaks;
+			$contrast_summary->[8] += $result_row->mouse_introns_number_of_peaks;
+			$contrast_summary->[9] += $result_row->mouse_3prime_utr_number_of_peaks;
+			$contrast_summary->[10] += $result_row->mouse_2_5k_downstream_number_of_peaks;
+			$contrast_summary->[11] += $result_row->mouse_5k_downstream_number_of_peaks;
+			$contrast_summary->[12] += $result_row->mouse_10k_downstream_number_of_peaks;
+			$contrast_summary->[13] += $result_row->mouse_25k_downstream_number_of_peaks;
+			$contrast_summary->[14] += $result_row->mouse_50k_downstream_number_of_peaks;
+			$contrast_summary->[15] += $result_row->mouse_100k_downstream_number_of_peaks;
+		}
+	} else {
+		croak "\n\nThe species was not properly named.\n\n";
 	}
 	return $contrast_summary;
 }

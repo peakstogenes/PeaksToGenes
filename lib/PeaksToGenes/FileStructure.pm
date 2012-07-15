@@ -1,6 +1,7 @@
 package PeaksToGenes::FileStructure 0.001;
 use Moose::Role;
 use Carp;
+use FindBin;
 
 =head1 NAME
 
@@ -21,42 +22,44 @@ of the summits.
 
 =cut
 
+my $file_base = "$FindBin::Bin/../";
+
 my $human_index = [                 
-	"static/Human_Index/Human_100K_Upstream.bed",
-	"static/Human_Index/Human_50K_Upstream.bed",
-	"static/Human_Index/Human_25K_Upstream.bed",
-	"static/Human_Index/Human_10K_Upstream.bed",
-	"static/Human_Index/Human_5K_Upstream.bed",
-	"static/Human_Index/Human_Promoters.bed",
-	"static/Human_Index/Human_5Prime_UTR.bed",
-	"static/Human_Index/Human_Exons.bed",
-	"static/Human_Index/Human_Introns.bed",
-	"static/Human_Index/Human_3Prime_UTR.bed",
-	"static/Human_Index/Human_2.5K_Downstream.bed",
-	"static/Human_Index/Human_5K_Downstream.bed",
-	"static/Human_Index/Human_10K_Downstream.bed",
-	"static/Human_Index/Human_25K_Downstream.bed",
-	"static/Human_Index/Human_50K_Downstream.bed",
-	"static/Human_Index/Human_100K_Downstream.bed",
+	"$file_base" . "static/Human_Index/Human_100K_Upstream.bed",
+	"$file_base" . "static/Human_Index/Human_50K_Upstream.bed",
+	"$file_base" . "static/Human_Index/Human_25K_Upstream.bed",
+	"$file_base" . "static/Human_Index/Human_10K_Upstream.bed",
+	"$file_base" . "static/Human_Index/Human_5K_Upstream.bed",
+	"$file_base" . "static/Human_Index/Human_Promoters.bed",
+	"$file_base" . "static/Human_Index/Human_5Prime_UTR.bed",
+	"$file_base" . "static/Human_Index/Human_Exons.bed",
+	"$file_base" . "static/Human_Index/Human_Introns.bed",
+	"$file_base" . "static/Human_Index/Human_3Prime_UTR.bed",
+	"$file_base" . "static/Human_Index/Human_2.5K_Downstream.bed",
+	"$file_base" . "static/Human_Index/Human_5K_Downstream.bed",
+	"$file_base" . "static/Human_Index/Human_10K_Downstream.bed",
+	"$file_base" . "static/Human_Index/Human_25K_Downstream.bed",
+	"$file_base" . "static/Human_Index/Human_50K_Downstream.bed",
+	"$file_base" . "static/Human_Index/Human_100K_Downstream.bed",
 ];
 
 my $mouse_index = [                 
-	"static/Mouse_Index/Mouse_100K_Upstream.bed",
-	"static/Mouse_Index/Mouse_50K_Upstream.bed",
-	"static/Mouse_Index/Mouse_25K_Upstream.bed",
-	"static/Mouse_Index/Mouse_10K_Upstream.bed",
-	"static/Mouse_Index/Mouse_5K_Upstream.bed",
-	"static/Mouse_Index/Mouse_Promoters.bed",
-	"static/Mouse_Index/Mouse_5Prime_UTR.bed",
-	"static/Mouse_Index/Mouse_Exons.bed",
-	"static/Mouse_Index/Mouse_Introns.bed",
-	"static/Mouse_Index/Mouse_3Prime_UTR.bed",
-	"static/Mouse_Index/Mouse_2.5K_Downstream.bed",
-	"static/Mouse_Index/Mouse_5K_Downstream.bed",
-	"static/Mouse_Index/Mouse_10K_Downstream.bed",
-	"static/Mouse_Index/Mouse_25K_Downstream.bed",
-	"static/Mouse_Index/Mouse_50K_Downstream.bed",
-	"static/Mouse_Index/Mouse_100K_Downstream.bed",
+	"$file_base" . "static/Mouse_Index/Mouse_100K_Upstream.bed",
+	"$file_base" . "static/Mouse_Index/Mouse_50K_Upstream.bed",
+	"$file_base" . "static/Mouse_Index/Mouse_25K_Upstream.bed",
+	"$file_base" . "static/Mouse_Index/Mouse_10K_Upstream.bed",
+	"$file_base" . "static/Mouse_Index/Mouse_5K_Upstream.bed",
+	"$file_base" . "static/Mouse_Index/Mouse_Promoters.bed",
+	"$file_base" . "static/Mouse_Index/Mouse_5Prime_UTR.bed",
+	"$file_base" . "static/Mouse_Index/Mouse_Exons.bed",
+	"$file_base" . "static/Mouse_Index/Mouse_Introns.bed",
+	"$file_base" . "static/Mouse_Index/Mouse_3Prime_UTR.bed",
+	"$file_base" . "static/Mouse_Index/Mouse_2.5K_Downstream.bed",
+	"$file_base" . "static/Mouse_Index/Mouse_5K_Downstream.bed",
+	"$file_base" . "static/Mouse_Index/Mouse_10K_Downstream.bed",
+	"$file_base" . "static/Mouse_Index/Mouse_25K_Downstream.bed",
+	"$file_base" . "static/Mouse_Index/Mouse_50K_Downstream.bed",
+	"$file_base" . "static/Mouse_Index/Mouse_100K_Downstream.bed",
 ];
 
 =head1 SUBROUTINES/METHODS

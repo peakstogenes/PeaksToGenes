@@ -39,7 +39,7 @@ sub annotate_peaks {
 	print "Now aligning your peaks to:\n\n";
 	foreach my $index_file (@$index_files) {
 		my $location;
-		if ($index_file =~ /_Index\/(.+?)\.bed/ ) {
+		if ($index_file =~ /_Index\/(.+?)\.bed$/ ) {
 			$location = $1;
 		}
 		if ($location) {
@@ -91,7 +91,7 @@ sub _create_blank_index {
 	foreach my $index_file (@$index_files) {
 		foreach my $gene (@$genes) {
 			my $index_base;
-			if ($index_file =~ /^.+?\/.+?\/(.+?)\.bed$/ ) {
+			if ($index_file =~ /.+?\/.+?_Index\/(.+?)\.bed$/ ) {
 				$index_base = $1;
 			}
 			my $peak_numbers = $index_base . '_Number_of_Peaks';
