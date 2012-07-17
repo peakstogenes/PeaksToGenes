@@ -44,7 +44,8 @@ sub insert_peaks {
 
 sub return_contrast {
 	my ($self, $contrast_file, $species, $table_name) = @_;
-	my ($valid_accessions, $invalid_accessions, $contrast_summary);
+	my ($valid_accessions, $contrast_summary);
+	my $invalid_accessions = [];
 	for (my $i = 0; $i < 15; $i++) {
 		$contrast_summary->[$i] = 0;
 	}
