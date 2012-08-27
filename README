@@ -63,6 +63,7 @@ DBIx::Class::Core
 lib
 DBI
 DBD::SQLite
+WWW::Mechanize
 
 To install on any system, use CPAN e.g.
 
