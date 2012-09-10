@@ -10,6 +10,7 @@ use PeaksToGenes::BedTools;
 use PeaksToGenes::Out;
 use PeaksToGenes::Update;
 use PeaksToGenes::Update::UCSC;
+use PeaksToGenes::Contrast;
 use Data::Dumper;
 
 with 'MooseX::Getopt';
@@ -129,6 +130,15 @@ has 'genes'	=>	(
 	default			=>	sub { croak "\n\nYou must enter a file name to run in contrast mode\n\n" },
 );
 
+has 'contrast_name'	=>	(
+	is				=>	'ro',
+	isa				=>	'Str',
+	required		=>	1,
+	lazy			=>	1,
+	documentation	=>	"The name of the contrast you are performing.",
+	default			=>	sub { croak "\n\nYou must enter a contrast name to run in contrast mode\n\n" },
+);
+
 =head2 execute
 
 This is the main subroutine that is executed. It makes calls to subclasses
@@ -196,6 +206,29 @@ sub execute {
 		print "Operation completed!\n";
 	} elsif ( $self->mode eq 'contrast' ) {
 		print "\n\nRunning in contrast mode...\n\n";
+		# Create an instance of PeaksToGenes::Contrast
+		my $contrast = PeaksToGenes::Contrast->new(
+			genome			=>	$self->genome,
+			schema			=>	$self->schema,
+			name			=>	$self->name,
+			genes			=>	$self->genes,
+			contrast_name	=>	$self->contrast_name,
+		);
+		# Using PeaksToGenes::Contrast, determine if
+		# the name of the user-defined experiment has
+		# been indexed in the PeaksToGenes database. Then
+		# extract the RefSeq accessions to make sure that
+		# each one exists in the database. If there are any
+		# errors in either of the first two parameters,
+		# throw an error and return it to the user. Once
+		# the input has been tested, determine the aggregate
+		# number of peaks per relative genomic region based
+		# on the user-defined list of accessions.
+		my $invalid_accessions = $contrast->test_and_contrast;
+		if ( $invalid_accessions ) {
+			print "The following accessions were not found in the ", $self->name, " table:\n\n\t", join("\n\t", @$invalid_accessions), "\n\n";
+		}
+		print "Operation completed!\n";
 	} elsif ( $self->mode eq 'list' ) {
 		print "\n\nRunning in list mode...\n\n";
 	} elsif ( $self->mode eq 'delete' ) {

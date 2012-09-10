@@ -3,7 +3,6 @@ use Moose;
 use Carp;
 use FindBin;
 use lib "$FindBin::Bin/../lib";
-use PeaksToGenes::Update::Delete;
 use PeaksToGenes::Update::UCSC;
 use Data::Dumper;
 
@@ -47,8 +46,6 @@ has genome	=>	(
 	required	=>	1,
 );
 
-my $file_base = "$FindBin::Bin/../";
-
 =head1 SUBROUTINES/METHODS
 
 =head2 update
@@ -63,14 +60,6 @@ Finally, it will update the AvailableGenomes database.
 
 sub update {
 	my $self = shift;
-	# Create an instance of PeaksToGenes::Update::Delete
-	my $delete_genome = PeaksToGenes::Update::Delete->new(
-		genome	=>	$self->genome,
-		schema	=>	$self->schema,
-	);
-	# Run the PeaksToGenes::Update::Delete delete subroutine to
-	# delete any instances of the user-defined genome to update
-	$delete_genome->delete;
 	# Create an instance on PeaksToGenes::Update::UCSC
 	my $ucsc = PeaksToGenes::Update::UCSC->new(
 		genome	=>	$self->genome,
@@ -83,27 +72,23 @@ sub update {
 	my $available_genomes_insert = [
 		{
 			genome	=>	$self->genome,
-			_100K_Upstream_Peaks_File	=>	$base_files->[0],
-			_50K_Upstream_Peaks_File	=>	$base_files->[1],
-			_25K_Upstream_Peaks_File	=>	$base_files->[2],
-			_10K_Upstream_Peaks_File	=>	$base_files->[3],
-			_5K_Upstream_Peaks_File	=>	$base_files->[4],
-			_Promoters_Peaks_File	=>	$base_files->[5],
-			_5Prime_UTR_Peaks_File	=>	$base_files->[6],
-			_Exons_Peaks_File	=>	$base_files->[7],
-			_Introns_Peaks_File	=>	$base_files->[8],
-			_3Prime_UTR_Peaks_File	=>	$base_files->[9],
-			_2_5K_Downstream_Peaks_File	=>	$base_files->[10],
-			_5K_Downstream_Peaks_File	=>	$base_files->[11],
-			_10K_Downstream_Peaks_File	=>	$base_files->[12],
-			_25K_Downstream_Peaks_File	=>	$base_files->[13],
-			_50K_Downstream_Peaks_File	=>	$base_files->[14],
-			_100K_Downstream_Peaks_File	=>	$base_files->[15],
 		}
 	];
+	# Create a stored regular expression to extract the base table names
+	# from each file
+	my $genome = $self->genome;
+	my $regex_search = qr/static\/($genome)_Index\/($genome)(_.+?)\.bed$/;
+	# Iterate through the files created and add them to the insert statement
+	foreach my $file_string (@$base_files) {
+		if ($file_string =~ m/$regex_search/) {
+			$available_genomes_insert->[0]{lc($3) . "_peaks_file"} = $file_string;
+		} else {
+			die "\n\nCould not match $file_string to pattern. Please check with your installation or version of Perl.\n\n";
+		}
+	}
 	# Create an instance of the AvailableGenome results set and insert files
 	my $available_genomes_results_set = $self->schema->resultset('AvailableGenome');
-	$available_genomes_results_set->populate($available_genomes_insert);
+	$available_genomes_results_set->update_or_create(@$available_genomes_insert);
 }
 
 =head1 AUTHOR

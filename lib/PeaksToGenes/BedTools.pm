@@ -97,6 +97,7 @@ sub annotate_peaks {
 					$index_strand) = split(/\t/, $intersected_peak);
 				$indexed_peaks->{$index_gene}{$peak_number}++;
 				$indexed_peaks->{$index_gene}{$peak_info} .= ' /// ' . join(":", $summit_chr, $summit_start, $summit_start, $summit_name) . ' /// ';
+				$indexed_peaks->{$index_gene}{$location . '_Interval_Size'} += ($index_stop - $index_start);
 			}
 		} else {
 			croak "There was a problem determining the location of the index file relative to transcription start site";
@@ -123,7 +124,7 @@ sub _create_blank_index {
 	# found open the promoter file and extract the RefSeq accessions,
 	# pushing each one onto the genes Array Ref
 	foreach my $index_file (@$index_files) {
-		if ($index_file =~ /Promoters/) {
+		if ($index_file =~ /_1Kb_Upstream/) {
 			open my($promoters), "<", $index_file or croak "Could not open $index_file $! \n";
 			while (<$promoters>) {
 				my $line = $_;
@@ -149,6 +150,8 @@ sub _create_blank_index {
 			if ( $index_base ) {
 				my $peak_numbers = $index_base . '_Number_of_Peaks';
 				$indexed_peaks->{$gene}{$peak_numbers} = 0;
+				my $interval_size = $index_base . '_Interval_Size';
+				$indexed_peaks->{$gene}{$interval_size} = 0;
 				my $peak_info = $index_base . '_Peaks_Information';
 				$indexed_peaks->{$gene}{$peak_info} = '';
 			}

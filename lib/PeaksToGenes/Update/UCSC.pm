@@ -350,23 +350,16 @@ sub fetch_tables {
 	# Create the directory
 	`mkdir $directory`;
 	my $file_strings = [
-		$directory . $self->genome . "_100K_Upstream.bed",
-		$directory . $self->genome . "_50K_Upstream.bed",
-		$directory . $self->genome . "_25K_Upstream.bed",
-		$directory . $self->genome . "_10K_Upstream.bed",
-		$directory . $self->genome . "_5K_Upstream.bed",
-		$directory . $self->genome . "_Promoters.bed",
 		$directory . $self->genome . "_5Prime_UTR.bed",
 		$directory . $self->genome . "_Exons.bed",
 		$directory . $self->genome . "_Introns.bed",
 		$directory . $self->genome . "_3Prime_UTR.bed",
-		$directory . $self->genome . "_2_5K_Downstream.bed",
-		$directory . $self->genome . "_5K_Downstream.bed",
-		$directory . $self->genome . "_10K_Downstream.bed",
-		$directory . $self->genome . "_25K_Downstream.bed",
-		$directory . $self->genome . "_50K_Downstream.bed",
-		$directory . $self->genome . "_100K_Downstream.bed",
 	];
+	# Add the 1Kb iterative locations to the file strings Array Ref
+	for ( my $i = 1; $i <= 100; $i++ ) {
+		unshift ( @$file_strings, $directory . $self->genome . "_$i" . "Kb_Upstream.bed");
+		push ( @$file_strings, $directory . $self->genome . "_$i" . "Kb_Downstream.bed");
+	}
 	# Define the columns to fetch from the UCSC MySQL browser
 	my $column_names = [
 		"chrom",
@@ -393,96 +386,54 @@ sub fetch_tables {
 	);
 	# Get the chromosome sizes file from UCSC
 	my $chrom_sizes = $self->chromosome_sizes;
-	# Pre-declare a Hash Ref of upstream iterator distances
-	my $upstream_iterator_distances = {
-		0	=>	100000,
-		1	=>	50000,
-		2	=>	25000,
-		3	=>	10000,
-		4	=>	5000,
-		5	=>	2500,
-	};
-	# Pre-declare a Hash Ref of length for each extension distance
-	my $extension_length = {
-		100000	=>	50000,
-		50000	=>	25000,
-		25000	=>	10000,
-		10000	=>	5000,
-		5000	=>	2500,
-		2500	=>	0,
-	};
-	# Iterate through the upstream files and create each one
-	for ( my $i = 0; $i < 6; $i++ ) {
-		# Pre-declare an Array ref to store the extended coordinates
-		my $extended_coordinates = [];
+	# Iterate through the iteration distances and create a file for each one
+	for ( my $i = 0; $i < 100; $i++ ) {
+		# Pre-declare an Array ref to store the extended coordinates for both
+		# upstream and downstream extensions
+		my $upstream_extended_coordinates = [];
+		my $downstream_extended_coordinates = [];
 		# Iterate through the Hash Ref of accessions and extend the coordinates
 		# based on the iterator extension values and within the bounds of the 
 		# chromosome size. If the coordinates are valid, push them on to the
 		# end of the extended_coordinates Array Ref
 		foreach my $accession ( keys %$refseq ) {
 			# Pre-declare two integers for the extended start and stop
-			my $extended_start = 0;
-			my $extended_stop = 0;
+			my $upstream_extended_start = 0;
+			my $upstream_extended_stop = 0;
+			my $downstream_extended_start = 0;
+			my $downstream_extended_stop = 0;
 			if ( $refseq->{$accession}{strand} eq '+' ) {
-				$extended_start = $refseq->{$accession}{txStart} - $upstream_iterator_distances->{$i};
-				$extended_stop = $refseq->{$accession}{txStart} - $extension_length->{$upstream_iterator_distances->{$i}};
+				$upstream_extended_start = $refseq->{$accession}{txStart} - ($i*1000);
+				$upstream_extended_stop = $refseq->{$accession}{txStart} - ($i*1000) + 1000;
+				$downstream_extended_start = $refseq->{$accession}{txEnd} + ($i*1000) - 1000;
+				$downstream_extended_stop = $refseq->{$accession}{txEnd} + ($i*1000);
 			} elsif ( $refseq->{$accession}{strand} eq '-' ) {
-				$extended_start = $refseq->{$accession}{txEnd} + $extension_length->{$upstream_iterator_distances->{$i}};
-				$extended_stop = $refseq->{$accession}{txEnd} + $upstream_iterator_distances->{$i};
+				$upstream_extended_start = $refseq->{$accession}{txEnd} + ($i*1000) - 1000;
+				$upstream_extended_stop = $refseq->{$accession}{txEnd} + ($i*1000);
+				$downstream_extended_start = $refseq->{$accession}{txStart} - ($i*1000);
+				$downstream_extended_stop = $refseq->{$accession}{txStart} - ($i*1000) + 1000;
 			} else {
 				croak "\n\nThere was a problem getting the appropriate database information for the genome specified. Please check that the UCSC MySQL tables have not changed.\n\n";
 			}
 			# Test to ensure that the extended coordinates are valid within the constraints of
 			# the chromosome
-			if (($extended_start > 0) && ($extended_start <= $chrom_sizes->{$refseq->{$accession}{chrom}}) &&
-				($extended_stop > 0) && ($extended_start <= $chrom_sizes->{$refseq->{$accession}{chrom}})) {
+			if (($downstream_extended_start > 0) && ($downstream_extended_start <= $chrom_sizes->{$refseq->{$accession}{chrom}}) &&
+				($downstream_extended_stop > 0) && ($downstream_extended_start <= $chrom_sizes->{$refseq->{$accession}{chrom}})) {
 				# Add the coordinates to the Array Ref
-				push(@$extended_coordinates, join("\t", $refseq->{$accession}{chrom}, $extended_start, $extended_stop, $accession));
+				push(@$downstream_extended_coordinates, join("\t", $refseq->{$accession}{chrom}, $downstream_extended_start, $downstream_extended_stop, $accession));
+			}
+			if (($upstream_extended_start > 0) && ($upstream_extended_start <= $chrom_sizes->{$refseq->{$accession}{chrom}}) &&
+				($upstream_extended_stop > 0) && ($upstream_extended_start <= $chrom_sizes->{$refseq->{$accession}{chrom}})) {
+				# Add the coordinates to the Array Ref
+				push(@$upstream_extended_coordinates, join("\t", $refseq->{$accession}{chrom}, $upstream_extended_start, $upstream_extended_stop, $accession));
 			}
 		}
-		open my $out_fh, ">", $file_strings->[$i], or die "Could not write to file: " . $file_strings->[$i] . " $!\n";
-		print $out_fh join("\n", @$extended_coordinates);
-	}
-	# Pre-declare a Hash Ref of downstream iterator distances
-	my $downstream_iterator_distances = {
-		10	=>	100000,
-		11	=>	50000,
-		12	=>	25000,
-		13	=>	10000,
-		14	=>	5000,
-		15	=>	2500,
-	};
-	# Iterate through the downstream files and create each one
-	for ( my $i = 10; $i < @$file_strings; $i++ ) {
-		# Pre-declare an Array ref to store the extended coordinates
-		my $extended_coordinates = [];
-		# Iterate through the Hash Ref of accessions and extend the coordinates
-		# based on the iterator extension values and within the bounds of the 
-		# chromosome size. If the coordinates are valid, push them on to the
-		# end of the extended_coordinates Array Ref
-		foreach my $accession ( keys %$refseq ) {
-			# Pre-declare two integers for the extended start and stop
-			my $extended_start = 0;
-			my $extended_stop = 0;
-			if ( $refseq->{$accession}{strand} eq '+' ) {
-				$extended_start = $refseq->{$accession}{txStart} + $extension_length->{$downstream_iterator_distances->{$i}};
-				$extended_stop = $refseq->{$accession}{txStart} + $downstream_iterator_distances->{$i};
-			} elsif ( $refseq->{$accession}{strand} eq '-' ) {
-				$extended_start = $refseq->{$accession}{txEnd} - $downstream_iterator_distances->{$i};
-				$extended_stop = $refseq->{$accession}{txEnd} - $extension_length->{$downstream_iterator_distances->{$i}};
-			} else {
-				croak "\n\nThere was a problem getting the appropriate database information for the genome specified. Please check that the UCSC MySQL tables have not changed.\n\n";
-			}
-			# Test to ensure that the extended coordinates are valid within the constraints of
-			# the chromosome
-			if (($extended_start > 0) && ($extended_start <= $chrom_sizes->{$refseq->{$accession}{chrom}}) &&
-				($extended_stop > 0) && ($extended_start <= $chrom_sizes->{$refseq->{$accession}{chrom}})) {
-				# Add the coordinates to the Array Ref
-				push(@$extended_coordinates, join("\t", $refseq->{$accession}{chrom}, $extended_start, $extended_stop, $accession));
-			}
-		}
-		open my $out_fh, ">", $file_strings->[$i], or die "Could not write to file: " . $file_strings->[$i] . " $!\n";
-		print $out_fh join("\n", @$extended_coordinates);
+		# Print the upstream coordinates to file
+		open my $upstream_out_fh, ">", $file_strings->[99-$i], or die "Could not write to file: " . $file_strings->[99-$i] . " $!\n";
+		print $upstream_out_fh join("\n", @$upstream_extended_coordinates);
+		# Print the upstream coordinates to file
+		open my $downstream_out_fh, ">", $file_strings->[104 + $i], or die "Could not write to file: " . $file_strings->[104 + $i] . " $!\n";
+		print $downstream_out_fh join("\n", @$downstream_extended_coordinates);
 	}
 	# Loop through the accessions in the RefSeq HashRef, and calculate the 5'-UTR coordinates,
 	# Exons, Introns, and 3'-UTR coordinates. Then write them to file.
@@ -556,13 +507,13 @@ sub fetch_tables {
 		}
 	}
 	# Print the coordinates to file
-	open my $five_prime_fh, ">", $file_strings->[6], or die "Could not write to file: " . $file_strings->[6] . " $!\n";
+	open my $five_prime_fh, ">", $file_strings->[100], or die "Could not write to file: " . $file_strings->[100] . " $!\n";
 	print $five_prime_fh join("\n", @$five_prime_utrs);
-	open my $exons_fh, ">", $file_strings->[7], or die "Could not write to file: " . $file_strings->[7] . " $!\n";
+	open my $exons_fh, ">", $file_strings->[101], or die "Could not write to file: " . $file_strings->[101] . " $!\n";
 	print $exons_fh join("\n", @$exons);
-	open my $introns_fh, ">", $file_strings->[8], or die "Could not write to file: " . $file_strings->[8] . " $!\n";
+	open my $introns_fh, ">", $file_strings->[102], or die "Could not write to file: " . $file_strings->[102] . " $!\n";
 	print $introns_fh join("\n", @$introns);
-	open my $three_prime_fh, ">", $file_strings->[9], or die "Could not write to file: " . $file_strings->[9] . " $!\n";
+	open my $three_prime_fh, ">", $file_strings->[103], or die "Could not write to file: " . $file_strings->[103] . " $!\n";
 	print $three_prime_fh join("\n", @$three_prime_utrs);
 	return $file_strings;
 }

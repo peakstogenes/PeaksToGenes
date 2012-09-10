@@ -93,9 +93,16 @@ sub summary_and_out {
 			# Append the information type to the location string
 			my $peak_number = $location . '_Number_of_Peaks';
 			# Add the number of peaks column to the row items
-			push(@$row_items, $self->indexed_peaks->{$gene}{$peak_number});
-			# Add the number of peaks for this location to the summary file
-			$summary_hash->{$location} += $self->indexed_peaks->{$gene}{$peak_number};
+			if ( $self->indexed_peaks->{$gene}{$location . '_Interval_Size'} > 0 ) {
+				$self->indexed_peaks->{$gene}{$peak_number} /= ($self->indexed_peaks->{$gene}{$location . '_Interval_Size'} / 1000);
+				push(@$row_items, $self->indexed_peaks->{$gene}{$peak_number});
+				# Add the number of peaks for this location to the summary file
+				$summary_hash->{$location} += ($self->indexed_peaks->{$gene}{$peak_number} / ($self->indexed_peaks->{$gene}{$location . '_Interval_Size'} / 1000));
+			} else {
+				push(@$row_items, $self->indexed_peaks->{$gene}{$peak_number});
+				# Add the number of peaks for this location to the summary file
+				$summary_hash->{$location} += $self->indexed_peaks->{$gene}{$peak_number};
+			}
 		}
 		# Iterate through a second time to add the peak locations information to
 		# the row items
@@ -180,10 +187,26 @@ sub insert_peaks {
 	my $insert = [];
 	# Iterate through the indexed peaks and create insert statments
 	foreach my $accession ( keys %{$self->indexed_peaks} ) {
-		$self->indexed_peaks->{$accession}{genome_id} = $genome_id;
-		$self->indexed_peaks->{$accession}{name} = $self->name;
-		$self->indexed_peaks->{$accession}{gene} = $accession;
-		push(@$insert, $self->indexed_peaks->{$accession});
+		# Pre-declare a Hash Ref to hold the insert statement for this line
+		my $insert_line = {};
+		$insert_line->{genome_id} = $genome_id;
+		$insert_line->{name} = $self->name;
+		$insert_line->{gene} = $accession;
+		$insert_line->{_3Prime_UTR_Number_of_Peaks} = $self->indexed_peaks->{$accession}{_3Prime_UTR_Number_of_Peaks};
+		$insert_line->{_3Prime_UTR_Peaks_Information} = $self->indexed_peaks->{$accession}{_3Prime_UTR_Peaks_Information};
+		$insert_line->{_5Prime_UTR_Number_of_Peaks} = $self->indexed_peaks->{$accession}{_5Prime_UTR_Number_of_Peaks};
+		$insert_line->{_5Prime_UTR_Peaks_Information} = $self->indexed_peaks->{$accession}{_5Prime_UTR_Peaks_Information};
+		$insert_line->{_Exons_Number_of_Peaks} = $self->indexed_peaks->{$accession}{_Exons_Number_of_Peaks};
+		$insert_line->{_Exons_Peaks_Information} = $self->indexed_peaks->{$accession}{_Exons_Peaks_Information};
+		$insert_line->{_Introns_Number_of_Peaks} = $self->indexed_peaks->{$accession}{_Introns_Number_of_Peaks};
+		$insert_line->{_Introns_Peaks_Information} = $self->indexed_peaks->{$accession}{_Introns_Peaks_Information};
+		for ( my $i = 1; $i <= 100; $i++ ) {
+			$insert_line->{'_' . $i . 'Kb_Upstream_Peaks_Information'} = $self->indexed_peaks->{$accession}{'_' . $i . 'Kb_Upstream_Peaks_Information'};
+			$insert_line->{'_' . $i . 'Kb_Downstream_Peaks_Information'} = $self->indexed_peaks->{$accession}{'_' . $i . 'Kb_Downstream_Peaks_Information'};
+			$insert_line->{'_' . $i . 'Kb_Upstream_Number_of_Peaks'} = $self->indexed_peaks->{$accession}{'_' . $i . 'Kb_Upstream_Number_of_Peaks'};
+			$insert_line->{'_' . $i . 'Kb_Downstream_Number_of_Peaks'} = $self->indexed_peaks->{$accession}{'_' . $i . 'Kb_Downstream_Number_of_Peaks'};
+		}
+		push(@$insert, $insert_line);
 	}
 	# Create an Annotatedpeak result set
 	my $annotated_peak_result_set = $self->schema->resultset('Annotatedpeak');

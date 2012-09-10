@@ -47,8 +47,6 @@ has name	=>	(
 	required	=>	1,
 );
 
-my $file_base = "$FindBin::Bin/../";
-
 =head1 SUBROUTINES/METHODS
 
 =head2 test_and_extract
@@ -89,22 +87,16 @@ sub test_and_extract {
 	# Iterate through the returned rows (there should only be one) and extract the
 	# relevant information to return to the user
 	while ( my $available_genomes_search_result = $available_genomes_search_results->next ) {
-		push(@$genome_info, $available_genomes_search_result->_100k_upstream_peaks_file);
-		push(@$genome_info, $available_genomes_search_result->_50k_upstream_peaks_file);
-		push(@$genome_info, $available_genomes_search_result->_25k_upstream_peaks_file);
-		push(@$genome_info, $available_genomes_search_result->_10k_upstream_peaks_file);
-		push(@$genome_info, $available_genomes_search_result->_5k_upstream_peaks_file);
-		push(@$genome_info, $available_genomes_search_result->_promoters_peaks_file);
 		push(@$genome_info, $available_genomes_search_result->_5prime_utr_peaks_file);
 		push(@$genome_info, $available_genomes_search_result->_exons_peaks_file);
 		push(@$genome_info, $available_genomes_search_result->_introns_peaks_file);
 		push(@$genome_info, $available_genomes_search_result->_3prime_utr_peaks_file);
-		push(@$genome_info, $available_genomes_search_result->_2_5k_downstream_peaks_file);
-		push(@$genome_info, $available_genomes_search_result->_5k_downstream_peaks_file);
-		push(@$genome_info, $available_genomes_search_result->_10k_downstream_peaks_file);
-		push(@$genome_info, $available_genomes_search_result->_25k_downstream_peaks_file);
-		push(@$genome_info, $available_genomes_search_result->_50k_downstream_peaks_file);
-		push(@$genome_info, $available_genomes_search_result->_100k_downstream_peaks_file);
+		for ( my $i = 1; $i <= 100; $i++ ) {
+			my $upstream_file = '_' . $i . 'kb_upstream_peaks_file';
+			my $downstream_file = '_' . $i . 'kb_downstream_peaks_file';
+			unshift(@$genome_info, $available_genomes_search_result->$upstream_file);
+			push(@$genome_info, $available_genomes_search_result->$downstream_file);
+		}
 	}
 	# If the genome is not defined in the search results, return an error message
 	# to the user
