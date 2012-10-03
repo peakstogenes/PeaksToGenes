@@ -46,6 +46,7 @@ has mode	=>	 (
 	is				=>	'ro',
 	isa				=>	'Valid_Mode',
 	required		=>	1,
+	lazy			=>	1,
 	documentation	=>	"Mode to use PeaksToGenes in. Valid options: 'annotate' 'contrast' 'list' 'delete' 'update'",
 	default			=>	sub {$_ ? lc($_) : croak "\n\nYou must define the mode to run PeaksToGenes in.\nPlease use peaksToGenes.pl --usage to view available options.\n\n"  },
 );
@@ -89,7 +90,11 @@ has _intersect_bed_executable	=>	(
 		my $self = shift;
 		my $intersect_bed_path = `which intersectBed`;
 		chomp($intersect_bed_path);
-		return $intersect_bed_path;
+		if ($intersect_bed_path !~ /intersectBed$/) {
+			croak "\n\nPlease make sure that you have installed BedTools, and that it is installed in your \$PATH\n\n";
+		} else {
+			return $intersect_bed_path;
+		}
 	},
 );
 
@@ -102,6 +107,9 @@ has '_sqlite3_executable'	=>	(
 		my $self = shift;
 		my $sqlite3_path = `which sqlite3`;
 		chomp ($sqlite3_path);
+		if ($sqlite3_path =~ /sqlite$/) {
+			croak "\n\nPlease make sure that you have installed SQLite3, and that is is installed in your \$PATH\n\n";
+		}
 		return $sqlite3_path;
 	},
 );
@@ -126,7 +134,7 @@ has 'genes'	=>	(
 	isa				=>	'Str',
 	required		=>	1,
 	lazy			=>	1,
-	documentation	=>	"The file path to the list of genes you wish to extract from the database",
+	documentation	=>	"The file path to the list of RefSeq accessions (genes) you wish to extract from the database",
 	default			=>	sub { croak "\n\nYou must enter a file name to run in contrast mode\n\n" },
 );
 

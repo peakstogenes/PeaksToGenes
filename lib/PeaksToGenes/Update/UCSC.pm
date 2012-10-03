@@ -38,259 +38,73 @@ has genome	=>	(
 
 has genome_info	=>	(
 	is			=>	'ro',
-	isa			=>	'HashRef[HashRef[Str]]',
+	isa			=>	'HashRef[Str]',
 	required	=>	1,
 	default		=>	sub {
 		my $self = shift;
 		my $genome_info = {
-			hg19	=>	{
-				organism	=>	"Human",
-				clade		=>	"mammal",
-			},
-			hg18	=>	{
-				organism	=>	"Human",
-				clade		=>	"mammal",
-			},
-			hg17	=>	{
-				organism	=>	"Human",
-				clade		=>	"mammal",
-			},
-			hg16	=>	{
-				organism	=>	"Human",
-				clade		=>	"mammal",
-			},
-			panTro3	=>	{
-				organism	=>	"Chimp",
-				clade		=>	"mammal",
-			},
-			panTro2	=>	{
-				organism	=>	"Chimp",
-				clade		=>	"mammal",
-			},
-			panTro1	=>	{
-				organism	=>	"Chimp",
-				clade		=>	"mammal",
-			},
-			ponAbe2	=>	{
-				organism	=>	"Orangutan",
-				clade		=>	"mammal",
-			},
-			rheMac2	=>	{
-				organism	=>	"Rhesus",
-				clade		=>	"mammal",
-			},
-			calJac3	=>	{
-				organism	=>	"Marmoset",
-				clade		=>	"mammal",
-			},
-			calJac1	=>	{
-				organism	=>	"Marmoset",
-				clade		=>	"mammal",
-			},
-			mm10	=>	{
-				organism	=>	"Mouse",
-				clade		=>	"mammal",
-			},
-			mm9	=>	{
-				organism	=>	"Mouse",
-				clade		=>	"mammal",
-			},
-			mm8	=>	{
-				organism	=>	"Mouse",
-				clade		=>	"mammal",
-			},
-			mm7	=>	{
-				organism	=>	"Mouse",
-				clade		=>	"mammal",
-			},
-			rn5	=>	{
-				organism	=>	"Rat",
-				clade		=>	"mammal",
-			},
-			rn4	=>	{
-				organism	=>	"Rat",
-				clade		=>	"mammal",
-			},
-			rn3	=>	{
-				organism	=>	"Rat",
-				clade		=>	"mammal",
-			},
-			cavPor3	=>	{
-				organism	=>	"Guinea pig",
-				clade		=>	"mammal",
-			},
-			oryCun2	=>	{
-				organism	=>	"Rabbit",
-				clade		=>	"mammal",
-			},
-			oviAri1	=>	{
-				organism	=>	"Sheep",
-				clade		=>	"mammal",
-			},
-			bosTau7	=>	{
-				organism	=>	"Cow",
-				clade		=>	"mammal",
-			},
-			bosTau6	=>	{
-				organism	=>	"Cow",
-				clade		=>	"mammal",
-			},
-			bosTau4	=>	{
-				organism	=>	"Cow",
-				clade		=>	"mammal",
-			},
-			bosTau3	=>	{
-				organism	=>	"Cow",
-				clade		=>	"mammal",
-			},
-			bosTau2	=>	{
-				organism	=>	"Cow",
-				clade		=>	"mammal",
-			},
-			equCab2	=>	{
-				organism	=>	"Horse",
-				clade		=>	"mammal",
-			},
-			equCab1	=>	{
-				organism	=>	"Horse",
-				clade		=>	"mammal",
-			},
-			felCat4	=>	{
-				organism	=>	"Cat",
-				clade		=>	"mammal",
-			},
-			felCat3	=>	{
-				organism	=>	"Cat",
-				clade		=>	"mammal",
-			},
-			canFam3	=>	{
-				organism	=>	"Dog",
-				clade		=>	"mammal",
-			},
-			canFam2	=>	{
-				organism	=>	"Dog",
-				clade		=>	"mammal",
-			},
-			canFam1	=>	{
-				organism	=>	"Dog",
-				clade		=>	"mammal",
-			},
-			monDom5	=>	{
-				organism	=>	"Opossum",
-				clade		=>	"mammal",
-			},
-			monDom4	=>	{
-				organism	=>	"Opossum",
-				clade		=>	"mammal",
-			},
-			monDom1	=>	{
-				organism	=>	"Opossum",
-				clade		=>	"mammal",
-			},
-			ornAna1	=>	{
-				organism	=>	"Platypus",
-				clade		=>	"mammal",
-			},
-			galGal4	=>	{
-				organism	=>	"Chicken",
-				clade		=>	"vertebrate",
-			},
-			galGal3	=>	{
-				organism	=>	"Chicken",
-				clade		=>	"vertebrate",
-			},
-			galGal2	=>	{
-				organism	=>	"Chicken",
-				clade		=>	"vertebrate",
-			},
-			taeGut1	=>	{
-				organism	=>	"Zebra finch",
-				clade		=>	"vertebrate",
-			},
-			xenTro3	=>	{
-				organism	=>	"X. tropicalis",
-				clade		=>	"vertebrate",
-			},
-			xenTro2	=>	{
-				organism	=>	"X. tropicalis",
-				clade		=>	"vertebrate",
-			},
-			xenTro1	=>	{
-				organism	=>	"X. tropicalis",
-				clade		=>	"vertebrate",
-			},
-			danRer7	=>	{
-				organism	=>	"Zebrafish",
-				clade		=>	"vertebrate",
-			},
-			danRer6	=>	{
-				organism	=>	"Zebrafish",
-				clade		=>	"vertebrate",
-			},
-			danRer5	=>	{
-				organism	=>	"Zebrafish",
-				clade		=>	"vertebrate",
-			},
-			danRer4	=>	{
-				organism	=>	"Zebrafish",
-				clade		=>	"vertebrate",
-			},
-			danRer3	=>	{
-				organism	=>	"Zebrafish",
-				clade		=>	"vertebrate",
-			},
-			fr3	=>	{
-				organism	=>	"Fugu",
-				clade		=>	"vertebrate",
-			},
-			fr2	=>	{
-				organism	=>	"Fugu",
-				clade		=>	"vertebrate",
-			},
-			fr1	=>	{
-				organism	=>	"Fugu",
-				clade		=>	"vertebrate",
-			},
-			gasAcu1	=>	{
-				organism	=>	"Stickleback",
-				clade		=>	"vertebrate",
-			},
-			oryLat2	=>	{
-				organism	=>	"Medaka",
-				clade		=>	"vertebrate",
-			},
-			dm3	=>	{
-				organism	=>	"D. melanogaster",
-				clade		=>	"insect",
-			},
-			dm2	=>	{
-				organism	=>	"D. melanogaster",
-				clade		=>	"insect",
-			},
-			dm1	=>	{
-				organism	=>	"D. melanogaster",
-				clade		=>	"insect",
-			},
-			ce10	=>	{
-				organism	=>	"C. elegans",
-				clade		=>	"worm",
-			},
-			ce6	=>	{
-				organism	=>	"C. elegans",
-				clade		=>	"worm",
-			},
-			ce4	=>	{
-				organism	=>	"C. elegans",
-				clade		=>	"worm",
-			},
-			ce2	=>	{
-				organism	=>	"C. elegans",
-				clade		=>	"worm",
-			},
-			ce10	=>	{
-				organism	=>	"C. elegans",
-				clade		=>	"worm",
-			},
+			hg19	=>	1,
+			hg18	=>	1,
+			hg17	=>	1,
+			hg16	=>	1,
+			panTro3	=>	1,
+			panTro2	=>	1,
+			panTro1	=>	1,
+			ponAbe2	=>	1,
+			rheMac2	=>	1,
+			calJac3	=>	1,
+			calJac1	=>	1,
+			mm10	=>	1,
+			mm9	=>	1,
+			mm8	=>	1,
+			mm7	=>	1,
+			rn5	=>	1,
+			rn4	=>	1,
+			rn3	=>	1,
+			cavPor3	=>	1,
+			oryCun2	=>	1,
+			oviAri1	=>	1,
+			bosTau7	=>	1,
+			bosTau6	=>	1,
+			bosTau4	=>	1,
+			bosTau3	=>	1,
+			bosTau2	=>	1,
+			equCab2	=>	1,
+			equCab1	=>	1,
+			felCat4	=>	1,
+			felCat3	=>	1,
+			canFam3	=>	1,
+			canFam2	=>	1,
+			canFam1	=>	1,
+			monDom5	=>	1,
+			monDom4	=>	1,
+			monDom1	=>	1,
+			ornAna1	=>	1,
+			galGal4	=>	1,
+			galGal3	=>	1,
+			galGal2	=>	1,
+			taeGut1	=>	1,
+			xenTro3	=>	1,
+			xenTro2	=>	1,
+			xenTro1	=>	1,
+			danRer7	=>	1,
+			danRer6	=>	1,
+			danRer5	=>	1,
+			danRer4	=>	1,
+			danRer3	=>	1,
+			fr3	=>	1,
+			fr2	=>	1,
+			fr1	=>	1,
+			gasAcu1	=>	1,
+			oryLat2	=>	1,
+			dm3	=>	1,
+			dm2	=>	1,
+			dm1	=>	1,
+			ce10	=>	1,
+			ce6	=>	1,
+			ce4	=>	1,
+			ce2	=>	1,
+			ce10	=>	1,
 		};
 		return $genome_info;
 	},
@@ -336,6 +150,58 @@ module, otherwise it will return an Array Ref of file names.
 
 sub fetch_tables {
 	my $self = shift;
+
+	# Use the file_names subroutine to create a folder in the static
+	# directory for the genome to be updated. This will also delete any
+	# existing folder. The file names are returned in the form of an Array
+	# Ref
+	my $file_strings = $self->file_names;
+
+	# Use the get_gene_body_coordinates subroutine to interact with the
+	# UCSC MySQL server and return the gene coordinates in the form of a
+	# Hash Ref
+	my $refseq = $self->get_gene_body_coordinates;
+
+	# Get the chromosome sizes file from UCSC
+	my $chrom_sizes = $self->chromosome_sizes;
+
+	# Make a call to the empty_genomic_coordinates subroutine to create a
+	# structure to store the genomic coordinates in
+	my $genomic_coordinates = $self->empty_genomic_coordinates;
+
+	# Iterate through the accessions returned from UCSC and calculate the
+	# coordinates needed for the upstream, downstream, UTRs, exons,
+	# introns, and gene body positions.
+	foreach my $accession (keys %$refseq) {
+		# Make a call to the get_upstream_and_downstream_coordinates
+		# subroutine to add to the genomic_coordinates Hash Ref of Array
+		# Refs of coordinates.
+		$genomic_coordinates =
+		$self->get_upstream_and_downstream_coordinates($refseq->{$accession},$chrom_sizes,
+			$genomic_coordinates);
+
+		# Make a call to the get_utrs_exon_and_introns subroutine to add
+		# the coordinates to the genomic_coordinates Hash Ref of Array Refs
+		# of coordinates
+		$genomic_coordinates =
+		$self->get_utrs_exon_and_introns($refseq->{$accession},
+			$genomic_coordinates);
+
+		# Make a call to the get_gene_body_coordinates subroutine to add
+		# the coordinates to the genomic_coordinates Hash Ref of Array Refs
+		# of coordinates
+		$genomic_coordinates =
+		$self->get_decile_coordinates($refseq->{$accession},
+			$genomic_coordinates);
+	}
+	# Make a call to the print_genomic_coordinates subroutine to print the
+	# coordinates to BED-format files in the static directory
+	$self->print_genomic_coordinates($file_strings, $genomic_coordinates);
+	return $file_strings;
+}
+
+sub file_names {
+	my $self = shift;
 	# Create an Array Ref of file strings for the index files to be
 	# written to as they are fetched from UCSC
 	# Use FindBin to set the base for the file string
@@ -354,12 +220,29 @@ sub fetch_tables {
 		$directory . $self->genome . "_Exons.bed",
 		$directory . $self->genome . "_Introns.bed",
 		$directory . $self->genome . "_3Prime_UTR.bed",
+		$directory . $self->genome . "_Gene_Body_0_to_10.bed",
+		$directory . $self->genome . "_Gene_Body_10_to_20.bed",
+		$directory . $self->genome . "_Gene_Body_20_to_30.bed",
+		$directory . $self->genome . "_Gene_Body_30_to_40.bed",
+		$directory . $self->genome . "_Gene_Body_40_to_50.bed",
+		$directory . $self->genome . "_Gene_Body_50_to_60.bed",
+		$directory . $self->genome . "_Gene_Body_60_to_70.bed",
+		$directory . $self->genome . "_Gene_Body_70_to_80.bed",
+		$directory . $self->genome . "_Gene_Body_80_to_90.bed",
+		$directory . $self->genome . "_Gene_Body_90_to_100.bed",
 	];
 	# Add the 1Kb iterative locations to the file strings Array Ref
 	for ( my $i = 1; $i <= 100; $i++ ) {
-		unshift ( @$file_strings, $directory . $self->genome . "_$i" . "Kb_Upstream.bed");
-		push ( @$file_strings, $directory . $self->genome . "_$i" . "Kb_Downstream.bed");
+		unshift ( @$file_strings, $directory . $self->genome . "_$i" .
+			"Kb_Upstream.bed");
+		push ( @$file_strings, $directory . $self->genome . "_$i" .
+			"Kb_Downstream.bed");
 	}
+	return $file_strings;
+}
+
+sub get_gene_body_coordinates {
+	my $self = shift;
 	# Define the columns to fetch from the UCSC MySQL browser
 	my $column_names = [
 		"chrom",
@@ -376,146 +259,264 @@ sub fetch_tables {
 	# Create a string for the DBI call
 	my $col_string = join(", ", @$column_names);
 	# Connect to the UCSC MySQL Browser
-	my $schema = PeaksToGenes::UCSC->connect('dbi:mysql:host=genome-mysql.cse.ucsc.edu;database=' . $self->genome, "genome");
+	my $schema =
+	PeaksToGenes::UCSC->connect('dbi:mysql:host=genome-mysql.cse.ucsc.edu;database='
+		. $self->genome, "genome");
 	# Extract all of the RefSeq gene coordinates
 	my $refseq = $schema->storage->dbh_do(
 		sub {
 			my ($storage, $dbh, @args) = @_;
-			$dbh->selectall_hashref("SELECT $col_string FROM refGene", ["name"]);
+			$dbh->selectall_hashref("SELECT $col_string FROM refGene",
+				["name"]);
 		},
 	);
-	# Get the chromosome sizes file from UCSC
-	my $chrom_sizes = $self->chromosome_sizes;
+	return $refseq;
+}
+
+sub empty_genomic_coordinates {
+	my $self = shift;
+	# Pre-declare a Hash Ref for the genomic coordinates
+	my $genomic_coordinates = {
+		'five_prime_utr_coordinates' 	=>	[],
+		'exon_coordinates'				=>	[],
+		'intron_coordinates'			=>	[],
+		'three_prime_utr_coordinates'	=>	[],
+		'decile_coordinates'			=>	{
+			1	=>	[],
+			2	=>	[],
+			3	=>	[],
+			4	=>	[],
+			5	=>	[],
+			6	=>	[],
+			7	=>	[],
+			8	=>	[],
+			9	=>	[],
+			10	=>	[]
+		},
+	};
+	for (my $i = 0; $i < 100; $i++) {
+		$genomic_coordinates->{'Upstream'}{$i} = [];
+		$genomic_coordinates->{'Downstream'}{$i} = [];
+	}
+	return $genomic_coordinates;
+}
+
+sub get_upstream_and_downstream_coordinates {
+	my ($self, $refseq, $chrom_sizes, $genomic_coordinates) = @_;
 	# Iterate through the iteration distances and create a file for each one
 	for ( my $i = 0; $i < 100; $i++ ) {
-		# Pre-declare an Array ref to store the extended coordinates for both
-		# upstream and downstream extensions
-		my $upstream_extended_coordinates = [];
-		my $downstream_extended_coordinates = [];
-		# Iterate through the Hash Ref of accessions and extend the coordinates
-		# based on the iterator extension values and within the bounds of the 
-		# chromosome size. If the coordinates are valid, push them on to the
-		# end of the extended_coordinates Array Ref
-		foreach my $accession ( keys %$refseq ) {
-			# Pre-declare two integers for the extended start and stop
-			my $upstream_extended_start = 0;
-			my $upstream_extended_stop = 0;
-			my $downstream_extended_start = 0;
-			my $downstream_extended_stop = 0;
-			if ( $refseq->{$accession}{strand} eq '+' ) {
-				$upstream_extended_start = $refseq->{$accession}{txStart} - ($i*1000);
-				$upstream_extended_stop = $refseq->{$accession}{txStart} - ($i*1000) + 1000;
-				$downstream_extended_start = $refseq->{$accession}{txEnd} + ($i*1000) - 1000;
-				$downstream_extended_stop = $refseq->{$accession}{txEnd} + ($i*1000);
-			} elsif ( $refseq->{$accession}{strand} eq '-' ) {
-				$upstream_extended_start = $refseq->{$accession}{txEnd} + ($i*1000) - 1000;
-				$upstream_extended_stop = $refseq->{$accession}{txEnd} + ($i*1000);
-				$downstream_extended_start = $refseq->{$accession}{txStart} - ($i*1000);
-				$downstream_extended_stop = $refseq->{$accession}{txStart} - ($i*1000) + 1000;
-			} else {
-				croak "\n\nThere was a problem getting the appropriate database information for the genome specified. Please check that the UCSC MySQL tables have not changed.\n\n";
-			}
-			# Test to ensure that the extended coordinates are valid within the constraints of
-			# the chromosome
-			if (($downstream_extended_start > 0) && ($downstream_extended_start <= $chrom_sizes->{$refseq->{$accession}{chrom}}) &&
-				($downstream_extended_stop > 0) && ($downstream_extended_start <= $chrom_sizes->{$refseq->{$accession}{chrom}})) {
-				# Add the coordinates to the Array Ref
-				push(@$downstream_extended_coordinates, join("\t", $refseq->{$accession}{chrom}, $downstream_extended_start, $downstream_extended_stop, $accession));
-			}
-			if (($upstream_extended_start > 0) && ($upstream_extended_start <= $chrom_sizes->{$refseq->{$accession}{chrom}}) &&
-				($upstream_extended_stop > 0) && ($upstream_extended_start <= $chrom_sizes->{$refseq->{$accession}{chrom}})) {
-				# Add the coordinates to the Array Ref
-				push(@$upstream_extended_coordinates, join("\t", $refseq->{$accession}{chrom}, $upstream_extended_start, $upstream_extended_stop, $accession));
-			}
+		# Use the coordinates for the given accession and extend the
+		# coordinates based on the iterator extension values and within the
+		# bounds of the chromosome size. If the coordinates are valid, push
+		# them on to the end of the extended_coordinates Array Ref.
+		# Pre-declare two integers for the extended start and stop
+		my $upstream_extended_start = 0;
+		my $upstream_extended_stop = 0;
+		my $downstream_extended_start = 0;
+		my $downstream_extended_stop = 0;
+		if ( $refseq->{strand} eq '+' ) {
+			$upstream_extended_start = $refseq->{txStart} -
+			($i*1000);
+			$upstream_extended_stop = $refseq->{txStart} -
+			($i*1000) + 999;
+			$downstream_extended_start = $refseq->{txEnd} +
+			($i*1000) - 1000;
+			$downstream_extended_stop = $refseq->{txEnd} +
+			(($i*1000) - 1);
+		} elsif ( $refseq->{strand} eq '-' ) {
+			$upstream_extended_start = $refseq->{txEnd} +
+			($i*1000) - 1000;
+			$upstream_extended_stop = $refseq->{txEnd} +
+			(($i*1000) - 1);
+			$downstream_extended_start = $refseq->{txStart}
+			- ($i*1000);
+			$downstream_extended_stop = $refseq->{txStart}
+			- ($i*1000) + 999;
+		} else {
+			croak "\n\nThere was a problem getting the appropriate database information for the genome specified. 
+			Please check that the UCSC MySQL tables have not changed.\n\n";
 		}
-		# Print the upstream coordinates to file
-		open my $upstream_out_fh, ">", $file_strings->[99-$i], or die "Could not write to file: " . $file_strings->[99-$i] . " $!\n";
-		print $upstream_out_fh join("\n", @$upstream_extended_coordinates);
-		# Print the upstream coordinates to file
-		open my $downstream_out_fh, ">", $file_strings->[104 + $i], or die "Could not write to file: " . $file_strings->[104 + $i] . " $!\n";
-		print $downstream_out_fh join("\n", @$downstream_extended_coordinates);
-	}
-	# Loop through the accessions in the RefSeq HashRef, and calculate the 5'-UTR coordinates,
-	# Exons, Introns, and 3'-UTR coordinates. Then write them to file.
-	# Pre-declare an Array Ref for each type of coordinates
-	my $five_prime_utrs = [];
-	my $exons = [];
-	my $introns = [];
-	my $three_prime_utrs = [];
-	foreach my $accession (keys %$refseq) {
-		# Test to make sure that the transcription start site and the coding start site
-		# are different, if they are push the coordinates onto the 5'-UTR coordinates
-		# or 3'-UTR coordinates depending on the strand
-		if ( $refseq->{$accession}{txStart} != $refseq->{$accession}{cdsStart} ) {
-			if ( $refseq->{$accession}{strand} eq '+' ) {
-				push(@$five_prime_utrs, join("\t", $refseq->{$accession}{chrom}, $refseq->{$accession}{txStart}, $refseq->{$accession}{cdsStart}, $accession));
-			} elsif ( $refseq->{$accession}{strand} eq '-' ) {
-				push(@$three_prime_utrs, join("\t", $refseq->{$accession}{chrom}, $refseq->{$accession}{txStart}, $refseq->{$accession}{cdsStart}, $accession));
-			}
+		# Test to ensure that the extended coordinates are valid within
+		# the constraints of the chromosome
+		if (($downstream_extended_start > 0) && 
+			($downstream_extended_start <= 
+				$chrom_sizes->{$refseq->{chrom}}) &&
+			($downstream_extended_stop > 0) && 
+			($downstream_extended_start <= 
+				$chrom_sizes->{$refseq->{chrom}})) {
+			# Add the coordinates to the Array Ref
+			push( @{$genomic_coordinates->{'Downstream'}{$i}}, 
+				join("\t", $refseq->{chrom},
+					$downstream_extended_start,
+					$downstream_extended_stop, $refseq->{name})
+			);
 		}
-		# Test to make sure that the transcription termination site and the coding 
-		# termination site are different, if they are push the coordinates onto 
-		# the 5'-UTR coordinates or 3'-UTR coordinates depending on the strand
-		if ( $refseq->{$accession}{txEnd } != $refseq->{$accession}{cdsEnd} ) {
-			if ( $refseq->{$accession}{strand} eq '+' ) {
-				push(@$three_prime_utrs, join("\t", $refseq->{$accession}{chrom}, $refseq->{$accession}{cdsEnd}, $refseq->{$accession}{txEnd}, $accession));
-			} elsif ( $refseq->{$accession}{strand} eq '-' ) {
-				push(@$five_prime_utrs, join("\t", $refseq->{$accession}{chrom}, $refseq->{$accession}{cdsEnd}, $refseq->{$accession}{txEnd}, $accession));
-			}
-		}
-		# Extract the coding exon and intron coordinates
-		my @exon_starts = split(/,/, $refseq->{$accession}{exonStarts});
-		my @exon_ends = split(/,/, $refseq->{$accession}{exonEnds});
-		if ( $refseq->{$accession}{strand} eq '+' ) {
-			for ( my $i = 0; $i < @exon_starts; $i++ ) {
-				if ( $exon_starts[$i] && $exon_ends[$i] ) {
-					# Add the exon coordinates to the exon Array Ref
-					push(@$exons, join("\t", $refseq->{$accession}{chrom}, $exon_starts[$i], $exon_ends[$i], $accession));
-				}
-			}
-			# Calculate the introns if there are more than one exon start
-			if ( @exon_starts > 1 ) {
-				for ( my $i = 1; $i < @exon_starts; $i++ ) {
-					if ( $exon_starts[$i] && $exon_ends[$i] ) {
-						# Unless this is the first exon's coordinates, calculate the intron
-						# coordinates and add them to the Introns Array Ref
-						if ( $exon_ends[($i-1)] ) {
-							push(@$introns, join("\t", $refseq->{$accession}{chrom}, $exon_ends[($i-1)], $exon_starts[$i], $accession));
-						}
-					}
-				}
-			}
-		} elsif ( $refseq->{$accession}{strand} eq '-' ) {
-			for ( my $i = @exon_starts; $i > 0; $i-- ) {
-				if ( $exon_starts[$i] && $exon_ends[$i] ) {
-					# Add the exon coordinates to the exon Array Ref
-					push(@$exons, join("\t", $refseq->{$accession}{chrom}, $exon_starts[$i], $exon_ends[$i], $accession));
-				}
-			}
-			# Calculate the introns if there are more than one exon start
-			if ( @exon_starts > 1 ) {
-				for ( my $i = @exon_starts; $i > 1; $i-- ) {
-					if ( $exon_starts[$i] && $exon_ends[$i] ) {
-						# Unless this is the first exon's coordinates, calculate the intron
-						# coordinates and add them to the Introns Array Ref
-						if ( $exon_ends[($i-1)] ) {
-							push(@$introns, join("\t", $refseq->{$accession}{chrom}, $exon_ends[($i-1)], $exon_starts[$i], $accession));
-						}
-					}
-				}
-			}
+		if (($upstream_extended_start > 0) && 
+			($upstream_extended_start <= 
+				$chrom_sizes->{$refseq->{chrom}}) &&
+			($upstream_extended_stop > 0) && 
+			($upstream_extended_start <= 
+				$chrom_sizes->{$refseq->{chrom}})) {
+			# Add the coordinates to the Array Ref
+			push(@{$genomic_coordinates->{'Upstream'}{$i}}, 
+				join("\t", $refseq->{chrom},
+					$upstream_extended_start, $upstream_extended_stop,
+					$refseq->{name})
+			);
 		}
 	}
-	# Print the coordinates to file
-	open my $five_prime_fh, ">", $file_strings->[100], or die "Could not write to file: " . $file_strings->[100] . " $!\n";
-	print $five_prime_fh join("\n", @$five_prime_utrs);
-	open my $exons_fh, ">", $file_strings->[101], or die "Could not write to file: " . $file_strings->[101] . " $!\n";
-	print $exons_fh join("\n", @$exons);
-	open my $introns_fh, ">", $file_strings->[102], or die "Could not write to file: " . $file_strings->[102] . " $!\n";
-	print $introns_fh join("\n", @$introns);
-	open my $three_prime_fh, ">", $file_strings->[103], or die "Could not write to file: " . $file_strings->[103] . " $!\n";
-	print $three_prime_fh join("\n", @$three_prime_utrs);
-	return $file_strings;
+	return $genomic_coordinates;
+}
+
+sub get_utrs_exon_and_introns {
+	my ($self, $refseq, $genomic_coordinates) = @_;
+	# Test to make sure that the transcription start site and the coding start site
+	# are different, if they are push the coordinates onto the 5'-UTR coordinates
+	# or 3'-UTR coordinates depending on the strand
+	if ( $refseq->{txStart} != $refseq->{cdsStart} ) {
+		if ( $refseq->{strand} eq '+' ) {
+			push(@{$genomic_coordinates->{'five_prime_utr_coordinates'}},
+				join("\t", $refseq->{chrom}, $refseq->{txStart},
+					($refseq->{cdsStart} - 1), $refseq->{name})
+			);
+		} elsif ( $refseq->{strand} eq '-' ) {
+			push(@{$genomic_coordinates->{'three_prime_utr_coordinates'}},
+				join("\t", $refseq->{chrom}, $refseq->{txStart},
+					($refseq->{cdsStart} - 1), $refseq->{name})
+			);
+		}
+	}
+	# Test to make sure that the transcription termination site and the
+	# coding termination site are different, if they are push the
+	# coordinates onto the 5'-UTR coordinates or 3'-UTR coordinates
+	# depending on the strand.
+	if ( $refseq->{txEnd} != $refseq->{cdsEnd} ) {
+		if ( $refseq->{strand} eq '+' ) {
+			push(@{$genomic_coordinates->{'three_prime_utr_coordinates'}},
+				join("\t", $refseq->{chrom}, $refseq->{cdsEnd},
+					($refseq->{txEnd} - 1), $refseq->{name})
+			);
+		} elsif ( $refseq->{strand} eq '-' ) {
+			push(@{$genomic_coordinates->{'five_prime_utr_coordinates'}},
+				join("\t", $refseq->{chrom}, $refseq->{cdsEnd},
+					($refseq->{txEnd} - 1), $refseq->{name})
+			);
+		}
+	}
+	# Extract the coding exon and intron coordinates
+	my @exon_starts = split(/,/, $refseq->{exonStarts});
+	my @exon_ends = split(/,/, $refseq->{exonEnds});
+	if ( $refseq->{strand} eq '+' ) {
+		for ( my $i = 0; $i < @exon_starts; $i++ ) {
+			if ( $exon_starts[$i] && $exon_ends[$i] ) {
+				# Add the exon coordinates to the exon Array Ref
+				push(@{$genomic_coordinates->{'exon_coordinates'}},
+					join("\t", $refseq->{chrom}, $exon_starts[$i],
+						($exon_ends[$i] - 1), $refseq->{name})
+				);
+			}
+		}
+		# Calculate the introns if there are more than one exon start
+		for ( my $i = 0; $i < @exon_ends; $i++ ) {
+			# Unless this is the first exon's coordinates,
+			# calculate the intron coordinates and add them to
+			# the Introns Array Ref.
+			if ( $exon_starts[$i+1] ) {
+				push(@{$genomic_coordinates->{'intron_coordinates'}},
+					join("\t", $refseq->{chrom},
+						$exon_ends[$i], 
+						($exon_starts[$i+1] - 1),
+						$refseq->{name})
+				);
+			}
+		}
+	} elsif ( $refseq->{strand} eq '-' ) {
+		for ( my $i = @exon_starts; $i > 0; $i-- ) {
+			if ( $exon_starts[$i] && $exon_ends[$i] ) {
+				# Add the exon coordinates to the exon Array Ref
+				push(@{$genomic_coordinates->{'exon_coordinates'}},
+					join("\t", $refseq->{chrom}, $exon_starts[$i],
+						($exon_ends[$i]-1), $refseq->{name})
+				);
+			}
+		}
+		# Calculate the introns if there are more than one exon start
+		for ( my $i = (@exon_starts-1); $i > 0; $i-- ) {
+			# Unless this is the first exon's coordinates,
+			# calculate the intron coordinates and add them to
+			# the Introns Array Ref.
+			if ( $exon_ends[($i-1)] ) {
+				push(@{$genomic_coordinates->{'intron_coordinates'}},
+					join("\t", $refseq->{chrom},
+						($exon_ends[($i-1)]), 
+						($exon_starts[$i] -1),
+						$refseq->{name})
+				);
+			}
+		}
+	}
+	return $genomic_coordinates;
+}
+
+sub get_decile_coordinates {
+	my ($self, $refseq, $genomic_coordinates) = @_;
+	# Calculate the length of the gene body, and divide it into 10
+	# approximately equal lengths.
+	my $gene_body_length = $refseq->{txEnd} - $refseq->{txStart};
+	my $decile_length = int(($gene_body_length / 10) + 0.5);
+	for ( my $decile = 1; $decile < 10; $decile++ ) {
+		my $decile_start = $refseq->{txStart} + ($decile_length *
+			($decile-1));
+		my $decile_stop = $decile_start + $decile_length - 1;
+		push (@{$genomic_coordinates->{'decile_coordinates'}{$decile}},
+			join("\t", $refseq->{chrom}, $decile_start, $decile_stop,
+				$refseq->{name})
+		);
+	}
+	push (@{$genomic_coordinates->{'decile_coordinates'}{10}}, join("\t",
+			$refseq->{chrom}, ($refseq->{txStart} + (9 * $decile_length)),
+			($refseq->{txEnd} - 1), $refseq->{name})
+	);
+	return $genomic_coordinates;
+}
+
+sub print_genomic_coordinates {
+	my ($self, $file_strings, $genomic_coordinates) = @_;
+	# Print the upstream and downstream coordinates to file
+	for (my $i = 0; $i < 100; $i++) {
+		open my $upstream_out, ">", $file_strings->[99-$i] or 
+		croak "Could not write to $file_strings->[99-$i] $! \n";
+		print $upstream_out join("\n",
+			@{$genomic_coordinates->{Upstream}{$i}});
+		open my $downstream_out, ">", $file_strings->[114+$i] or 
+		croak "Could not write to $file_strings->[114+$i] $! \n";
+		print $downstream_out join("\n",
+			@{$genomic_coordinates->{Downstream}{$i}});
+	}
+	# Print the 5'-UTR, 3'-UTR, exons, and introns coordinates to file
+	open my $five_prime_utr_out, ">", $file_strings->[100] or 
+	croak "Could not write to $file_strings->[100] $! \n";
+	print $five_prime_utr_out join("\n",
+		@{$genomic_coordinates->{five_prime_utr_coordinates}});
+	open my $three_prime_utr_out, ">", $file_strings->[103] or 
+	croak "Could not write to $file_strings->[103] $! \n";
+	print $three_prime_utr_out join("\n",
+		@{$genomic_coordinates->{three_prime_utr_coordinates}});
+	open my $exons_out, ">", $file_strings->[101] or 
+	croak "Could not write to $file_strings->[101] $! \n";
+	print $exons_out join("\n",
+		@{$genomic_coordinates->{exon_coordinates}});
+	open my $introns_out, ">", $file_strings->[102] or 
+	croak "Could not write to $file_strings->[102] $! \n";
+	print $introns_out join("\n",
+		@{$genomic_coordinates->{intron_coordinates}});
+	# Print the decile coordinates to file
+	for (my $i = 1; $i <= 10; $i++) {
+		open my $decile_out, ">", $file_strings->[103+$i] or
+		croak "Could not write to $file_strings->[103+$i] $! \n";
+		print $decile_out join("\n",
+			@{$genomic_coordinates->{decile_coordinates}{$i}});
+	}
 }
 
 =head1 AUTHOR
