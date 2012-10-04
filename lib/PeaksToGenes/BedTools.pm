@@ -53,6 +53,19 @@ has summits	=>	(
 	required	=>	1,
 );
 
+has base_regex	=>	(
+	is			=>	'ro',
+	isa			=>	'Str',
+	required	=>	1,
+	default		=>	sub {
+		my $self = shift;
+		# Create a regular expression string to be used to match the
+		# location of each index file.
+		my $base_regex = "\.\.\/" . $self->genome . "_Index\/" .
+		$self->genome;
+		return $base_regex;
+	}
+);
 =head2 annotate_peaks
 
 This subroutine is passed the file name of a bed file of summits,
@@ -67,59 +80,33 @@ sub annotate_peaks {
 	my $self = shift;
 	my $summits_file = $self->summits;
 	my $index_files = $self->index_files;
-	# Create a regular expression string to be used to match the location of each
-	# index file
-	my $base_regex = "\.\.\/" . $self->genome . "_Index\/" . $self->genome;
-	# Make a call to the private _create_blank index to make a blank genome-defined
-	# peaks to genes structures
-	my $indexed_peaks = $self->_create_blank_index($index_files, $base_regex);
-	print "Now aligning your peaks to:\n\n";
-	# Iterate through the ordered index, and interset the Summits file with the index
-	# file. Extract the information from any intersections that occur and store them
-	# in the indexed_peaks Hash Ref
-	foreach my $index_file (@$index_files) {
-		# Pre-declare a string to hold the genomic location of each index file
-		my $location = '';
-		if ($index_file =~ qr/($base_regex)(.+?)\.bed$/ ) {
-			$location = $2;
-		}
-		# If the location string has been found, intersect the location file with the
-		# summits file
-		if ($location) {
-			print "\t" . $self->genome . "$location\n";
-			my $peak_number = $location . '_Number_of_Peaks';
-			my $peak_info = $location . '_Peaks_Information';
-			my @intersected_peaks = `intersectBed -wb -a $summits_file -b $index_file`;
-			foreach my $intersected_peak (@intersected_peaks) {
-				chomp ($intersected_peak);
-				my ($summit_chr, $summit_start, $summit_end, $summit_name, $summit_score,
-					$index_chr, $index_start, $index_stop, $index_gene, $index_score,
-					$index_strand) = split(/\t/, $intersected_peak);
-				$indexed_peaks->{$index_gene}{$peak_number}++;
-				$indexed_peaks->{$index_gene}{$peak_info} .= ' /// ' . join(":", $summit_chr, $summit_start, $summit_start, $summit_name) . ' /// ';
-				$indexed_peaks->{$index_gene}{$location . '_Interval_Size'} += ($index_stop - $index_start);
-			}
-		} else {
-			croak "There was a problem determining the location of the index file relative to transcription start site";
-		}
-	}
+	# Make a call to create_blank_index to make a blank genome-defined
+	# peaks to genes structure
+	print "Creating a blank index for your genome...\n\n";
+	my $indexed_peaks = $self->create_blank_index($index_files);
+	print "Now aligning your peaks...\n\n";
+	# Make a call to align_peaks to determine to overlap of peaks relative
+	# to RefSeq gene positions
+	$indexed_peaks = $self->align_peaks($indexed_peaks);
 	print "\n";
 	return $indexed_peaks;
 }
 
-=head2 _create_blank_index
+=head2 create_blank_index
 
 This is a private subroutine called by annotate_peaks to create a blank
 user-defined index where information will be stored
 
 =cut
 
-sub _create_blank_index {
-	my ($self, $index_files, $base_regex) = @_;
+sub create_blank_index {
+	my ($self, $index_files) = @_;
 	# Pre-declare a Hash-ref to be defined by the indexed files
 	my $indexed_peaks = {};
 	# Pre-declcare an Array Ref to hold the list of RefSeq accession
 	my $genes = [];
+	# Copy the base_regex into a scalar
+	my $base_regex = $self->base_regex;
 	# Iterate through the index files to find the promoters file, once
 	# found open the promoter file and extract the RefSeq accessions,
 	# pushing each one onto the genes Array Ref
@@ -195,7 +182,7 @@ sub check_bed_file {
 		unless ($name) {
 			die "On line: $line_number you do not have anything in the fourth column to designate an interval/peak name. Please check your file.\n\n";
 		}
-		unless ($score > 0) {
+		unless ($score && $score > 0) {
 			die "On line: $line_number you do not have a score entered for your peak/interval. If these intervals do not have scores associated with them, please use the helper script to add a nominal score in the fifth column.\n\n";
 		}
 		if ($rest_of_line){
@@ -203,6 +190,42 @@ sub check_bed_file {
 		}
 		$line_number++;
 	}
+}
+
+sub align_peaks {
+	my ($self, $indexed_peaks) = @_;
+	my $index_files = $self->index_files;
+	my $base_regex = $self->base_regex;
+	my $summits_file = $self->summits;
+	# Iterate through the ordered index, and interset the Summits file with the index
+	# file. Extract the information from any intersections that occur and store them
+	# in the indexed_peaks Hash Ref
+	foreach my $index_file (@$index_files) {
+		# Pre-declare a string to hold the genomic location of each index file
+		my $location = '';
+		if ($index_file =~ qr/($base_regex)(.+?)\.bed$/ ) {
+			$location = $2;
+		}
+		# If the location string has been found, intersect the location file with the
+		# summits file
+		if ($location) {
+			my $peak_number = $location . '_Number_of_Peaks';
+			my $peak_info = $location . '_Peaks_Information';
+			my @intersected_peaks = `intersectBed -wb -a $summits_file -b $index_file`;
+			foreach my $intersected_peak (@intersected_peaks) {
+				chomp ($intersected_peak);
+				my ($summit_chr, $summit_start, $summit_end, $summit_name, $summit_score,
+					$index_chr, $index_start, $index_stop, $index_gene, $index_score,
+					$index_strand) = split(/\t/, $intersected_peak);
+				$indexed_peaks->{$index_gene}{$peak_number}++;
+				$indexed_peaks->{$index_gene}{$peak_info} .= ' /// ' . join(":", $summit_chr, $summit_start, $summit_start, $summit_name) . ' /// ';
+				$indexed_peaks->{$index_gene}{$location . '_Interval_Size'} += ($index_stop - $index_start);
+			}
+		} else {
+			croak "There was a problem determining the location of the index file relative to transcription start site";
+		}
+	}
+	return $indexed_peaks;
 }
 
 =head1 AUTHOR
