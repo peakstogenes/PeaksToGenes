@@ -559,47 +559,47 @@ __PACKAGE__->table("available_genomes");
   data_type: 'text'
   is_nullable: 0
 
-=head2 _gene_body_10_to_20_file
+=head2 _gene_body_10_to_20_peaks_file
 
   data_type: 'text'
   is_nullable: 0
 
-=head2 _gene_body_20_to_30_file
+=head2 _gene_body_20_to_30_peaks_file
 
   data_type: 'text'
   is_nullable: 0
 
-=head2 _gene_body_30_to_40_file
+=head2 _gene_body_30_to_40_peaks_file
 
   data_type: 'text'
   is_nullable: 0
 
-=head2 _gene_body_40_to_50_file
+=head2 _gene_body_40_to_50_peaks_file
 
   data_type: 'text'
   is_nullable: 0
 
-=head2 _gene_body_50_to_60_file
+=head2 _gene_body_50_to_60_peaks_file
 
   data_type: 'text'
   is_nullable: 0
 
-=head2 _gene_body_60_to_70_file
+=head2 _gene_body_60_to_70_peaks_file
 
   data_type: 'text'
   is_nullable: 0
 
-=head2 _gene_body_70_to_80_file
+=head2 _gene_body_70_to_80_peaks_file
 
   data_type: 'text'
   is_nullable: 0
 
-=head2 _gene_body_80_to_90_file
+=head2 _gene_body_80_to_90_peaks_file
 
   data_type: 'text'
   is_nullable: 0
 
-=head2 _gene_body_90_to_100_file
+=head2 _gene_body_90_to_100_peaks_file
 
   data_type: 'text'
   is_nullable: 0
@@ -1321,23 +1321,23 @@ __PACKAGE__->add_columns(
   { data_type => "text", is_nullable => 0 },
   "_gene_body_0_to_10_peaks_file",
   { data_type => "text", is_nullable => 0 },
-  "_gene_body_10_to_20_file",
+  "_gene_body_10_to_20_peaks_file",
   { data_type => "text", is_nullable => 0 },
-  "_gene_body_20_to_30_file",
+  "_gene_body_20_to_30_peaks_file",
   { data_type => "text", is_nullable => 0 },
-  "_gene_body_30_to_40_file",
+  "_gene_body_30_to_40_peaks_file",
   { data_type => "text", is_nullable => 0 },
-  "_gene_body_40_to_50_file",
+  "_gene_body_40_to_50_peaks_file",
   { data_type => "text", is_nullable => 0 },
-  "_gene_body_50_to_60_file",
+  "_gene_body_50_to_60_peaks_file",
   { data_type => "text", is_nullable => 0 },
-  "_gene_body_60_to_70_file",
+  "_gene_body_60_to_70_peaks_file",
   { data_type => "text", is_nullable => 0 },
-  "_gene_body_70_to_80_file",
+  "_gene_body_70_to_80_peaks_file",
   { data_type => "text", is_nullable => 0 },
-  "_gene_body_80_to_90_file",
+  "_gene_body_80_to_90_peaks_file",
   { data_type => "text", is_nullable => 0 },
-  "_gene_body_90_to_100_file",
+  "_gene_body_90_to_100_peaks_file",
   { data_type => "text", is_nullable => 0 },
   "_1kb_downstream_peaks_file",
   { data_type => "text", is_nullable => 0 },
@@ -2202,8 +2202,8 @@ __PACKAGE__->has_many(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07025 @ 2012-10-04 08:44:40
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:SbIyLKilqYSfxB8M1cU1oA
+# Created by DBIx::Class::Schema::Loader v0.07025 @ 2012-10-04 10:36:12
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:Inq2PhwS2MmWmcpNnAkKCA
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

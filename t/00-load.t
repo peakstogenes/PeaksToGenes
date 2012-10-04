@@ -7,6 +7,7 @@ use strict;
 use warnings;
 
 BEGIN {
+	use_ok( 'File::Which' ) || print "Bail out!\n";
 	use_ok( 'Moose' ) || print "Bail out!\n";
 	use_ok( 'Moose::Util::TypeConstraints' ) || print "Bail out!\n";
 	use_ok( 'Carp' ) || print "Bail out!\n";

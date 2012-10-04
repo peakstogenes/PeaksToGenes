@@ -68,6 +68,17 @@ sub update {
 	# to download the minimal base tables for the user-defined
 	# genome
 	my $base_files = $ucsc->fetch_tables;
+	# Run the create_statement subroutine to iterate through the base files
+	# and extract the relative location of the index files using a compiled
+	# regular expression
+	my $available_genomes_insert = $self->create_statement($base_files);
+	# Make a call to the update_database subroutine to insert the lines
+	# into the database
+	$self->update_database($available_genomes_insert);
+}
+
+sub create_statement {
+	my ($self, $base_files) = @_;
 	# Create a Hash Ref to insert into the available_genomes tables
 	my $available_genomes_insert = [
 		{
@@ -86,6 +97,11 @@ sub update {
 			die "\n\nCould not match $file_string to pattern. Please check with your installation or version of Perl.\n\n";
 		}
 	}
+	return $available_genomes_insert;
+}
+
+sub update_database {
+	my ($self, $available_genomes_insert) = @_;
 	# Create an instance of the AvailableGenome results set and insert files
 	my $available_genomes_results_set = $self->schema->resultset('AvailableGenome');
 	$available_genomes_results_set->update_or_create(@$available_genomes_insert);

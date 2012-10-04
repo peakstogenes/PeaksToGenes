@@ -81,39 +81,6 @@ has summits	=>	(
 	default			=>	sub { croak "\n\nYou must provide a path to the summit file.\n\n"},
 );
 
-has _intersect_bed_executable	=>	(
-	is				=>	'ro',
-	isa				=>	'Str',
-	required		=>	1,
-	documentation	=>	"Location of the intersectBed executable",
-	default			=>	sub {
-		my $self = shift;
-		my $intersect_bed_path = `which intersectBed`;
-		chomp($intersect_bed_path);
-		if ($intersect_bed_path !~ /intersectBed$/) {
-			croak "\n\nPlease make sure that you have installed BedTools, and that it is installed in your \$PATH\n\n";
-		} else {
-			return $intersect_bed_path;
-		}
-	},
-);
-
-has '_sqlite3_executable'	=>	(
-	is				=>	'ro',
-	isa				=>	'Str',
-	required		=>	1,
-	documentation	=>	"The location of your installation of SQLite3.",
-	default			=>	sub {
-		my $self = shift;
-		my $sqlite3_path = `which sqlite3`;
-		chomp ($sqlite3_path);
-		if ($sqlite3_path =~ /sqlite$/) {
-			croak "\n\nPlease make sure that you have installed SQLite3, and that is is installed in your \$PATH\n\n";
-		}
-		return $sqlite3_path;
-	},
-);
-
 has 'name'	=>	(
 	is				=>	'ro',
 	isa				=>	'Str',

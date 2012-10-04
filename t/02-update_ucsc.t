@@ -1,3 +1,4 @@
+#!/usr/bin/perl
 #
 #===============================================================================
 #
@@ -20,15 +21,14 @@
 use strict;
 use warnings;
 
-use Test::More tests => 317;                      # last test to print
+use Test::More tests => 320;                      # last test to print
 
 use FindBin;
 use lib "$FindBin::Bin/../lib";
 use PeaksToGenes::Update::UCSC;
-use Data::Dumper;
 
 BEGIN {
-	# Create a PeaksToGenes object
+	# Create a PeaksToGenes::Update::UCSC object
 	my $update = PeaksToGenes::Update::UCSC->new(
 			genome	=>	'hg19',
 	);
@@ -155,6 +155,15 @@ BEGIN {
 	foreach my $file_string (@$file_strings) {
 		ok( -r $file_string, "File string $file_string is readable");
 	}
+	# Create a new instance of PeaksToGenes::Update::UCSC and make the
+	# full call, and test to ensure that an Array Ref is returned
+	my $full_update = PeaksToGenes::Update::UCSC->new(
+		genome	=>	'hg19',
+	);
+	isa_ok($full_update, 'PeaksToGenes::Update::UCSC');
+	my $base_files = $full_update->fetch_tables;
+	isa_ok($base_files, 'ARRAY', 'The return from the full call to PeaksToGenes::Update::UCSC->fetch_tables returns');
+	cmp_ok(@$base_files, '==', 214, 'There are 214 files listed in the return from the full call to PeaksToGenes::Update::UCSC->fetch_tables');
 }
 
 diag( "Testing PeaksToGenes::UCSC::Update, Perl $], $^X" );
