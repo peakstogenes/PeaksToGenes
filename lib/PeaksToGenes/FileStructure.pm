@@ -62,6 +62,21 @@ database including an ArrayRef of file locations for the index.
 
 sub test_and_extract {
 	my $self = shift;
+	# Call the PeaksToGenes::FileStructure::test_name subroutine to ensure
+	# that the user-defined name has not been used before
+	$self->test_name;
+	# Call the PeaksToGenes::FileStructure::test_genome subroutine to
+	# ensure that the user-defined genome has been indexed
+	my $available_genomes_search_results = $self->test_genome;
+	# Call the PeaksToGenes::FileStructure::get_index_file_names subroutine
+	# to extract the names of the index files for the user-defined genome
+	my $genome_info =
+	$self->get_index_file_names($available_genomes_search_results);
+	return $genome_info;
+}
+
+sub test_name {
+	my $self = shift;
 	# Create an Annotatedpeak results set
 	my $annotated_peaks_result_set = $self->schema->resultset('Annotatedpeak');
 	# Search the Annotatedpeak results set for the user-defined name
@@ -72,8 +87,12 @@ sub test_and_extract {
 	);
 	# If the name is already used in the database, return an error to the user
 	while ( my $annotated_peaks_search_result = $annotated_peaks_search_results->next ) {
-		die "The user-defined experiment name: " . $self->name . ". Is already in use. Either delete those entries in the database or choose another experiment name.\n\n";
+		die "\n\nThe user-defined experiment name: " . $self->name . ". Is already in use. Either delete those entries in the database or choose another experiment name.\n\n";
 	}
+}
+
+sub test_genome {
+	my $self = shift;
 	# Create an AvailableGenome results set
 	my $available_genomes_result_set = $self->schema->resultset('AvailableGenome');
 	# Search the AvailableGenome results set for the user-defined genome
@@ -82,6 +101,17 @@ sub test_and_extract {
 			genome	=>	$self->genome
 		}
 	);
+	while ( my $available_genomes_search_result = $available_genomes_search_results->next ) {
+		unless ( $available_genomes_search_result->genome eq $self->genome ) {
+			croak "\n\nThe user-defined genome " . $self->genome . " has not been indexed. Please use the 'update' function to add the genome.\n\n";
+		}
+	}
+	$available_genomes_search_results->reset;
+	return $available_genomes_search_results;
+}
+
+sub get_index_file_names {
+	my ($self, $available_genomes_search_results) = @_;
 	# Pre-declare an Array Ref to hold the file structure
 	my $genome_info = [];
 	# Iterate through the returned rows (there should only be one) and extract the
@@ -91,17 +121,32 @@ sub test_and_extract {
 		push(@$genome_info, $available_genomes_search_result->_exons_peaks_file);
 		push(@$genome_info, $available_genomes_search_result->_introns_peaks_file);
 		push(@$genome_info, $available_genomes_search_result->_3prime_utr_peaks_file);
+		push(@$genome_info, 
+			$available_genomes_search_result->_gene_body_0_to_10_peaks_file);
+		push(@$genome_info, 
+			$available_genomes_search_result->_gene_body_10_to_20_peaks_file);
+		push(@$genome_info, 
+			$available_genomes_search_result->_gene_body_20_to_30_peaks_file);
+		push(@$genome_info, 
+			$available_genomes_search_result->_gene_body_30_to_40_peaks_file);
+		push(@$genome_info, 
+			$available_genomes_search_result->_gene_body_40_to_50_peaks_file);
+		push(@$genome_info, 
+			$available_genomes_search_result->_gene_body_50_to_60_peaks_file);
+		push(@$genome_info, 
+			$available_genomes_search_result->_gene_body_60_to_70_peaks_file);
+		push(@$genome_info, 
+			$available_genomes_search_result->_gene_body_70_to_80_peaks_file);
+		push(@$genome_info, 
+			$available_genomes_search_result->_gene_body_80_to_90_peaks_file);
+		push(@$genome_info, 
+			$available_genomes_search_result->_gene_body_90_to_100_peaks_file);
 		for ( my $i = 1; $i <= 100; $i++ ) {
 			my $upstream_file = '_' . $i . 'kb_upstream_peaks_file';
 			my $downstream_file = '_' . $i . 'kb_downstream_peaks_file';
 			unshift(@$genome_info, $available_genomes_search_result->$upstream_file);
 			push(@$genome_info, $available_genomes_search_result->$downstream_file);
 		}
-	}
-	# If the genome is not defined in the search results, return an error message
-	# to the user
-	unless ( @$genome_info ) {
-		die "\n\nThe user-defined genome " . $self->genome . " has not been added to this installation's AvailableGenomes database.\nPlease use the --update function to add your desired database to your installation of PeaksToGenes.\n\n";
 	}
 	return $genome_info;
 }
