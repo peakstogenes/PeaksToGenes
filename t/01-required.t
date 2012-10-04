@@ -20,7 +20,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 10;                      # last test to print
+use Test::More tests => 12;                      # last test to print
 
 use FindBin;
 use lib "$FindBin::Bin/../lib";
@@ -38,6 +38,11 @@ BEGIN {
 	like($sqlite_path, qr/sqlite3/, 'Sqlite3 is found in the $PATH');
 	# Test to make sure that Sqlite3 can be executed by Perl
 	ok( -X -x $sqlite_path, 'Sqlite3 is executable');
+	# Test to make sure that MySQL is installed
+	my $mysql_path = which('mysql');
+	like($mysql_path, qr/mysql/, 'MySQL is found in the $PATH');
+	# Test to make sure that MySQL in executable
+	ok( -X -x $mysql_path, 'MySQL is executable');
 	# Execute an external Perl script 'install_database.pl' to reset the
 	# PeaksToGenes database and remove any existing indexes written to file
 	`$FindBin::Bin/../install_database.pl`;
