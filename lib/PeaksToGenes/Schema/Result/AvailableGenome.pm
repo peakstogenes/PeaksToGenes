@@ -554,6 +554,56 @@ __PACKAGE__->table("available_genomes");
   data_type: 'text'
   is_nullable: 0
 
+=head2 _gene_body_0_to_10_peaks_file
+
+  data_type: 'text'
+  is_nullable: 0
+
+=head2 _gene_body_10_to_20_file
+
+  data_type: 'text'
+  is_nullable: 0
+
+=head2 _gene_body_20_to_30_file
+
+  data_type: 'text'
+  is_nullable: 0
+
+=head2 _gene_body_30_to_40_file
+
+  data_type: 'text'
+  is_nullable: 0
+
+=head2 _gene_body_40_to_50_file
+
+  data_type: 'text'
+  is_nullable: 0
+
+=head2 _gene_body_50_to_60_file
+
+  data_type: 'text'
+  is_nullable: 0
+
+=head2 _gene_body_60_to_70_file
+
+  data_type: 'text'
+  is_nullable: 0
+
+=head2 _gene_body_70_to_80_file
+
+  data_type: 'text'
+  is_nullable: 0
+
+=head2 _gene_body_80_to_90_file
+
+  data_type: 'text'
+  is_nullable: 0
+
+=head2 _gene_body_90_to_100_file
+
+  data_type: 'text'
+  is_nullable: 0
+
 =head2 _1kb_downstream_peaks_file
 
   data_type: 'text'
@@ -1268,6 +1318,26 @@ __PACKAGE__->add_columns(
   "_introns_peaks_file",
   { data_type => "text", is_nullable => 0 },
   "_3prime_utr_peaks_file",
+  { data_type => "text", is_nullable => 0 },
+  "_gene_body_0_to_10_peaks_file",
+  { data_type => "text", is_nullable => 0 },
+  "_gene_body_10_to_20_file",
+  { data_type => "text", is_nullable => 0 },
+  "_gene_body_20_to_30_file",
+  { data_type => "text", is_nullable => 0 },
+  "_gene_body_30_to_40_file",
+  { data_type => "text", is_nullable => 0 },
+  "_gene_body_40_to_50_file",
+  { data_type => "text", is_nullable => 0 },
+  "_gene_body_50_to_60_file",
+  { data_type => "text", is_nullable => 0 },
+  "_gene_body_60_to_70_file",
+  { data_type => "text", is_nullable => 0 },
+  "_gene_body_70_to_80_file",
+  { data_type => "text", is_nullable => 0 },
+  "_gene_body_80_to_90_file",
+  { data_type => "text", is_nullable => 0 },
+  "_gene_body_90_to_100_file",
   { data_type => "text", is_nullable => 0 },
   "_1kb_downstream_peaks_file",
   { data_type => "text", is_nullable => 0 },
@@ -2132,8 +2202,8 @@ __PACKAGE__->has_many(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07025 @ 2012-09-10 13:43:06
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:4gpceBe01mykuFanrFtNsg
+# Created by DBIx::Class::Schema::Loader v0.07025 @ 2012-10-04 08:44:40
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:SbIyLKilqYSfxB8M1cU1oA
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

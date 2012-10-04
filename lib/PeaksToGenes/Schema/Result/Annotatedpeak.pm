@@ -565,6 +565,56 @@ __PACKAGE__->table("annotatedpeaks");
   data_type: 'real'
   is_nullable: 1
 
+=head2 _gene_body_0_to_10_number_of_peaks
+
+  data_type: 'real'
+  is_nullable: 1
+
+=head2 _gene_body_10_to_20_number_of_peaks
+
+  data_type: 'real'
+  is_nullable: 1
+
+=head2 _gene_body_20_to_30_number_of_peaks
+
+  data_type: 'real'
+  is_nullable: 1
+
+=head2 _gene_body_30_to_40_number_of_peaks
+
+  data_type: 'real'
+  is_nullable: 1
+
+=head2 _gene_body_40_to_50_number_of_peaks
+
+  data_type: 'real'
+  is_nullable: 1
+
+=head2 _gene_body_50_to_60_number_of_peaks
+
+  data_type: 'real'
+  is_nullable: 1
+
+=head2 _gene_body_60_to_70_number_of_peaks
+
+  data_type: 'real'
+  is_nullable: 1
+
+=head2 _gene_body_70_to_80_number_of_peaks
+
+  data_type: 'real'
+  is_nullable: 1
+
+=head2 _gene_body_80_to_90_number_of_peaks
+
+  data_type: 'real'
+  is_nullable: 1
+
+=head2 _gene_body_90_to_100_number_of_peaks
+
+  data_type: 'real'
+  is_nullable: 1
+
 =head2 _1kb_downstream_number_of_peaks
 
   data_type: 'real'
@@ -1585,6 +1635,56 @@ __PACKAGE__->table("annotatedpeaks");
   data_type: 'text'
   is_nullable: 1
 
+=head2 _gene_body_0_to_10_peaks_information
+
+  data_type: 'text'
+  is_nullable: 1
+
+=head2 _gene_body_10_to_20_peaks_information
+
+  data_type: 'text'
+  is_nullable: 1
+
+=head2 _gene_body_20_to_30_peaks_information
+
+  data_type: 'text'
+  is_nullable: 1
+
+=head2 _gene_body_30_to_40_peaks_information
+
+  data_type: 'text'
+  is_nullable: 1
+
+=head2 _gene_body_40_to_50_peaks_information
+
+  data_type: 'text'
+  is_nullable: 1
+
+=head2 _gene_body_50_to_60_peaks_information
+
+  data_type: 'text'
+  is_nullable: 1
+
+=head2 _gene_body_60_to_70_peaks_information
+
+  data_type: 'text'
+  is_nullable: 1
+
+=head2 _gene_body_70_to_80_peaks_information
+
+  data_type: 'text'
+  is_nullable: 1
+
+=head2 _gene_body_80_to_90_peaks_information
+
+  data_type: 'text'
+  is_nullable: 1
+
+=head2 _gene_body_90_to_100_peaks_information
+
+  data_type: 'text'
+  is_nullable: 1
+
 =head2 _1kb_downstream_peaks_information
 
   data_type: 'text'
@@ -2304,6 +2404,26 @@ __PACKAGE__->add_columns(
   { data_type => "real", is_nullable => 1 },
   "_3prime_utr_number_of_peaks",
   { data_type => "real", is_nullable => 1 },
+  "_gene_body_0_to_10_number_of_peaks",
+  { data_type => "real", is_nullable => 1 },
+  "_gene_body_10_to_20_number_of_peaks",
+  { data_type => "real", is_nullable => 1 },
+  "_gene_body_20_to_30_number_of_peaks",
+  { data_type => "real", is_nullable => 1 },
+  "_gene_body_30_to_40_number_of_peaks",
+  { data_type => "real", is_nullable => 1 },
+  "_gene_body_40_to_50_number_of_peaks",
+  { data_type => "real", is_nullable => 1 },
+  "_gene_body_50_to_60_number_of_peaks",
+  { data_type => "real", is_nullable => 1 },
+  "_gene_body_60_to_70_number_of_peaks",
+  { data_type => "real", is_nullable => 1 },
+  "_gene_body_70_to_80_number_of_peaks",
+  { data_type => "real", is_nullable => 1 },
+  "_gene_body_80_to_90_number_of_peaks",
+  { data_type => "real", is_nullable => 1 },
+  "_gene_body_90_to_100_number_of_peaks",
+  { data_type => "real", is_nullable => 1 },
   "_1kb_downstream_number_of_peaks",
   { data_type => "real", is_nullable => 1 },
   "_2kb_downstream_number_of_peaks",
@@ -2712,6 +2832,26 @@ __PACKAGE__->add_columns(
   { data_type => "text", is_nullable => 1 },
   "_3prime_utr_peaks_information",
   { data_type => "text", is_nullable => 1 },
+  "_gene_body_0_to_10_peaks_information",
+  { data_type => "text", is_nullable => 1 },
+  "_gene_body_10_to_20_peaks_information",
+  { data_type => "text", is_nullable => 1 },
+  "_gene_body_20_to_30_peaks_information",
+  { data_type => "text", is_nullable => 1 },
+  "_gene_body_30_to_40_peaks_information",
+  { data_type => "text", is_nullable => 1 },
+  "_gene_body_40_to_50_peaks_information",
+  { data_type => "text", is_nullable => 1 },
+  "_gene_body_50_to_60_peaks_information",
+  { data_type => "text", is_nullable => 1 },
+  "_gene_body_60_to_70_peaks_information",
+  { data_type => "text", is_nullable => 1 },
+  "_gene_body_70_to_80_peaks_information",
+  { data_type => "text", is_nullable => 1 },
+  "_gene_body_80_to_90_peaks_information",
+  { data_type => "text", is_nullable => 1 },
+  "_gene_body_90_to_100_peaks_information",
+  { data_type => "text", is_nullable => 1 },
   "_1kb_downstream_peaks_information",
   { data_type => "text", is_nullable => 1 },
   "_2kb_downstream_peaks_information",
@@ -2960,8 +3100,8 @@ __PACKAGE__->belongs_to(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07025 @ 2012-09-10 17:08:06
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:/P+nYURfYlzKYP7iVNYMxg
+# Created by DBIx::Class::Schema::Loader v0.07025 @ 2012-10-04 08:44:40
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:F1lpWiGe/JtBotVKuBSffg
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration
