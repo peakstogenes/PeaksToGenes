@@ -473,9 +473,12 @@ sub get_decile_coordinates {
 				$refseq->{name})
 		);
 	}
+	my $tenth_decile_start = (($refseq->{txStart} + (9 * $decile_length)) <
+		$refseq->{txEnd} ? ($refseq->{txStart} + (9 * $decile_length)) :
+		$refseq->{txEnd});
 	push (@{$genomic_coordinates->{'decile_coordinates'}{10}}, join("\t",
-			$refseq->{chrom}, ($refseq->{txStart} + (9 * $decile_length)),
-			($refseq->{txEnd} - 1), $refseq->{name})
+			$refseq->{chrom}, $tenth_decile_start,
+			($refseq->{txEnd}), $refseq->{name})
 	);
 	return $genomic_coordinates;
 }
