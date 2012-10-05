@@ -212,12 +212,12 @@ sub align_peaks {
 			my $peak_number = $location . '_Number_of_Peaks';
 			my $peak_info = $location . '_Peaks_Information';
 			my @intersected_peaks = 
-			`intersectBed -wb -a $summits_file -b $index_file`;
+			`intersectBed -wo -a $summits_file -b $index_file`;
 			foreach my $intersected_peak (@intersected_peaks) {
 				chomp ($intersected_peak);
 				my ($summit_chr, $summit_start, $summit_end, $summit_name,
 					$summit_score, $index_chr, $index_start, $index_stop,
-					$index_gene, $index_score, $index_strand) = split(/\t/,
+					$index_gene, $overlap) = split(/\t/,
 					$intersected_peak);
 				$indexed_peaks->{$index_gene}{$peak_number}++;
 				$indexed_peaks->{$index_gene}{$peak_info} .= ' /// ' .
