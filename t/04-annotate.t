@@ -29,6 +29,7 @@ use PeaksToGenes;
 use PeaksToGenes::Update;
 use PeaksToGenes::FileStructure;
 use PeaksToGenes::BedTools;
+use PeaksToGenes::Out;
 use Data::Dumper;
 
 BEGIN {
@@ -152,13 +153,38 @@ BEGIN {
 	isa_ok($bedtools, 'PeaksToGenes::BedTools');
 	can_ok($bedtools, 'check_bed_file');
 	can_ok($bedtools, 'create_blank_index');
-	my $blank_index = $bedtools->create_blank_index($genome_info);
-	isa_ok($blank_index, 'HASH');
+	my $test_blank_index = $bedtools->create_blank_index($genome_info);
+	isa_ok($test_blank_index, 'HASH');
 	# Check to make sure that the bedtools object can execute the
 	# PeaksToGenes::BedTools::align_peaks subroutine, then execute the
 	# subroutine and test the returned data
 	can_ok($bedtools, 'align_peaks');
-	my $indexed_peaks = $bedtools->align_peaks($blank_index);
+	my $test_indexed_peaks = $bedtools->align_peaks($test_blank_index);
+	isa_ok($test_indexed_peaks, 'HASH');
+	cmp_ok($test_indexed_peaks->{'NM_003106'}{'_1Kb_Upstream_Number_of_Peaks'},
+		'==', 1, 'There is one peak in the SOX2 promoter/TSS region');
+	cmp_ok($test_indexed_peaks->{'NM_003106'}{'_1Kb_Upstream_Interval_Size'},
+		'==', 1000, 
+		'The interval size for the SOX2 promoter/TSS region is 1Kb');
+	cmp_ok($test_indexed_peaks->{'NM_024865'}{'_1Kb_Upstream_Number_of_Peaks'},
+		'==', 0, 'There are no peaks in the NANOG promoter/TSS region');
+	cmp_ok($test_indexed_peaks->{'NM_024865'}{'_1Kb_Upstream_Interval_Size'},
+		'==', 0,
+		'The interval size for the NANOG promoter/TSS region has not been measured'
+	);
+	cmp_ok($test_indexed_peaks->{'NM_003106'}{'_Gene_Body_0_to_10_Number_of_Peaks'},
+		'==', 1, 
+		'There is one peak in the SOX2 first decile of the gene body');
+	cmp_ok($test_indexed_peaks->{'NM_024865'}{'_Gene_Body_0_to_10_Number_of_Peaks'},
+		'==', 0, 
+		'There are no peaks in the NANOG first decile of the gene body');
+	# Using the already created instance of PeaksToGenes::BedTools, run the
+	# PeaksToGenes::BedTools::annotate_peaks function and test the ability
+	# of the PeaksToGenes::BedTools module to return a correctly formatted
+	# Hash Ref of RefSeq transcripts annotated with user-defined genomic
+	# positions
+	can_ok($bedtools, 'annotate_peaks');
+	my $indexed_peaks = $bedtools->annotate_peaks;
 	isa_ok($indexed_peaks, 'HASH');
 	cmp_ok($indexed_peaks->{'NM_003106'}{'_1Kb_Upstream_Number_of_Peaks'},
 		'==', 1, 'There is one peak in the SOX2 promoter/TSS region');
@@ -170,7 +196,17 @@ BEGIN {
 	cmp_ok($indexed_peaks->{'NM_024865'}{'_Gene_Body_0_to_10_Number_of_Peaks'},
 		'==', 0, 
 		'There are no peaks in the NANOG first decile of the gene body');
-	# Create an instance of PeaksToGenes::Out
+	# Create an instance of PeaksToGenes::Out to test the ability of each
+	# function in PeaksToGenes::Out to parse the Hash Ref returned by
+#	# PeaksToGenes::BedTools
+#	my $test_out = PeaksToGenes::Out->new(
+#		indexed_peaks	=>	$indexed_peaks,
+#		schema			=>	$peaks_to_genes->schema,
+#		name			=>	'testing1',
+#		ordered_index	=>	$genome_info,
+#		genome			=>	'hg19',
+#	);
+#	isa_ok($test_out, 'PeaksToGenes::Out');
 }
 
 done_testing;

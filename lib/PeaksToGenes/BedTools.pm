@@ -197,9 +197,9 @@ sub align_peaks {
 	my $index_files = $self->index_files;
 	my $base_regex = $self->base_regex;
 	my $summits_file = $self->summits;
-	# Iterate through the ordered index, and interset the Summits file with the index
-	# file. Extract the information from any intersections that occur and store them
-	# in the indexed_peaks Hash Ref
+	# Iterate through the ordered index, and intersect the Summits file
+	# with the index file. Extract the information from any intersections
+	# that occur and store them in the indexed_peaks Hash Ref.
 	foreach my $index_file (@$index_files) {
 		# Pre-declare a string to hold the genomic location of each index file
 		my $location = '';
@@ -211,15 +211,20 @@ sub align_peaks {
 		if ($location) {
 			my $peak_number = $location . '_Number_of_Peaks';
 			my $peak_info = $location . '_Peaks_Information';
-			my @intersected_peaks = `intersectBed -wb -a $summits_file -b $index_file`;
+			my @intersected_peaks = 
+			`intersectBed -wb -a $summits_file -b $index_file`;
 			foreach my $intersected_peak (@intersected_peaks) {
 				chomp ($intersected_peak);
-				my ($summit_chr, $summit_start, $summit_end, $summit_name, $summit_score,
-					$index_chr, $index_start, $index_stop, $index_gene, $index_score,
-					$index_strand) = split(/\t/, $intersected_peak);
+				my ($summit_chr, $summit_start, $summit_end, $summit_name,
+					$summit_score, $index_chr, $index_start, $index_stop,
+					$index_gene, $index_score, $index_strand) = split(/\t/,
+					$intersected_peak);
 				$indexed_peaks->{$index_gene}{$peak_number}++;
-				$indexed_peaks->{$index_gene}{$peak_info} .= ' /// ' . join(":", $summit_chr, $summit_start, $summit_start, $summit_name) . ' /// ';
-				$indexed_peaks->{$index_gene}{$location . '_Interval_Size'} += ($index_stop - $index_start);
+				$indexed_peaks->{$index_gene}{$peak_info} .= ' /// ' .
+				join(":", $summit_chr, $summit_start, $summit_start,
+					$summit_name) . ' /// ';
+				$indexed_peaks->{$index_gene}{$location . '_Interval_Size'}
+				+= ($index_stop - $index_start + 1);
 			}
 		} else {
 			croak "There was a problem determining the location of the index file relative to transcription start site";
