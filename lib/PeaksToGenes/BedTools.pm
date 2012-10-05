@@ -221,8 +221,8 @@ sub align_peaks {
 					$intersected_peak);
 				$indexed_peaks->{$index_gene}{$peak_number}++;
 				$indexed_peaks->{$index_gene}{$peak_info} .= ' /// ' .
-				join(":", $summit_chr, $summit_start, $summit_start,
-					$summit_name) . ' /// ';
+				join(":", $summit_chr, $summit_start, $summit_end,
+					$summit_name, $summit_score) . ' /// ';
 				$indexed_peaks->{$index_gene}{$location . '_Interval_Size'}
 				+= ($index_stop - $index_start + 1);
 			}
