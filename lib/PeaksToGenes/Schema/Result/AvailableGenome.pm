@@ -2186,24 +2186,159 @@ __PACKAGE__->add_unique_constraint(
 
 =head1 RELATIONS
 
-=head2 annotatedpeaks
+=head2 downstream_annotations
 
 Type: has_many
 
-Related object: L<PeaksToGenes::Schema::Result::Annotatedpeak>
+Related object: L<PeaksToGenes::Schema::Result::DownstreamAnnotation>
 
 =cut
 
 __PACKAGE__->has_many(
-  "annotatedpeaks",
-  "PeaksToGenes::Schema::Result::Annotatedpeak",
+  "downstream_annotations",
+  "PeaksToGenes::Schema::Result::DownstreamAnnotation",
+  { "foreign.genome_id" => "self.id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
+=head2 downstream_numbers_of_peaks
+
+Type: has_many
+
+Related object: L<PeaksToGenes::Schema::Result::DownstreamNumberOfPeaks>
+
+=cut
+
+__PACKAGE__->has_many(
+  "downstream_numbers_of_peaks",
+  "PeaksToGenes::Schema::Result::DownstreamNumberOfPeaks",
+  { "foreign.genome_id" => "self.id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
+=head2 experiments
+
+Type: has_many
+
+Related object: L<PeaksToGenes::Schema::Result::Experiment>
+
+=cut
+
+__PACKAGE__->has_many(
+  "experiments",
+  "PeaksToGenes::Schema::Result::Experiment",
+  { "foreign.genome_id" => "self.id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
+=head2 gene_body_annotations
+
+Type: has_many
+
+Related object: L<PeaksToGenes::Schema::Result::GeneBodyAnnotation>
+
+=cut
+
+__PACKAGE__->has_many(
+  "gene_body_annotations",
+  "PeaksToGenes::Schema::Result::GeneBodyAnnotation",
+  { "foreign.genome_id" => "self.id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
+=head2 gene_body_numbers_of_peaks
+
+Type: has_many
+
+Related object: L<PeaksToGenes::Schema::Result::GeneBodyNumberOfPeaks>
+
+=cut
+
+__PACKAGE__->has_many(
+  "gene_body_numbers_of_peaks",
+  "PeaksToGenes::Schema::Result::GeneBodyNumberOfPeaks",
+  { "foreign.genome_id" => "self.id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
+=head2 transcript_annotations
+
+Type: has_many
+
+Related object: L<PeaksToGenes::Schema::Result::TranscriptAnnotation>
+
+=cut
+
+__PACKAGE__->has_many(
+  "transcript_annotations",
+  "PeaksToGenes::Schema::Result::TranscriptAnnotation",
+  { "foreign.genome_id" => "self.id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
+=head2 transcript_numbers_of_peaks
+
+Type: has_many
+
+Related object: L<PeaksToGenes::Schema::Result::TranscriptNumberOfPeaks>
+
+=cut
+
+__PACKAGE__->has_many(
+  "transcript_numbers_of_peaks",
+  "PeaksToGenes::Schema::Result::TranscriptNumberOfPeaks",
+  { "foreign.genome_id" => "self.id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
+=head2 transcripts
+
+Type: has_many
+
+Related object: L<PeaksToGenes::Schema::Result::Transcript>
+
+=cut
+
+__PACKAGE__->has_many(
+  "transcripts",
+  "PeaksToGenes::Schema::Result::Transcript",
+  { "foreign.genome_id" => "self.id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
+=head2 upstream_annotations
+
+Type: has_many
+
+Related object: L<PeaksToGenes::Schema::Result::UpstreamAnnotation>
+
+=cut
+
+__PACKAGE__->has_many(
+  "upstream_annotations",
+  "PeaksToGenes::Schema::Result::UpstreamAnnotation",
+  { "foreign.genome_id" => "self.id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
+=head2 upstream_numbers_of_peaks
+
+Type: has_many
+
+Related object: L<PeaksToGenes::Schema::Result::UpstreamNumberOfPeaks>
+
+=cut
+
+__PACKAGE__->has_many(
+  "upstream_numbers_of_peaks",
+  "PeaksToGenes::Schema::Result::UpstreamNumberOfPeaks",
   { "foreign.genome_id" => "self.id" },
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07025 @ 2012-10-04 10:36:12
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:Inq2PhwS2MmWmcpNnAkKCA
+# Created by DBIx::Class::Schema::Loader v0.07025 @ 2012-10-05 21:56:09
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:kFKBFGx+0P5SOn01LePS+g
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

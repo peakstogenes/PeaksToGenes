@@ -1,10 +1,29 @@
-DROP TABLE IF EXISTS annotatedpeaks;
+DROP TABLE IF EXISTS upstream_annotation;
+DROP TABLE IF EXISTS downstream_annotation;
+DROP TABLE IF EXISTS transcript_annotation;
+DROP TABLE IF EXISTS gene_body_annotation;
+DROP TABLE IF EXISTS upstream_number_of_peaks;
+DROP TABLE IF EXISTS downstream_number_of_peaks;
+DROP TABLE IF EXISTS transcript_number_of_peaks;
+DROP TABLE IF EXISTS gene_body_number_of_peaks;
 DROP TABLE IF EXISTS available_genomes;
-CREATE TABLE annotatedpeaks (
+DROP TABLE IF EXISTS transcripts;
+DROP TABLE IF EXISTS experiments;
+CREATE TABLE transcripts (
 	id INTEGER PRIMARY KEY AUTOINCREMENT,
 	genome_id INTEGER NOT NULL REFERENCES available_genomes(id) ON UPDATE CASCADE,
-	name TEXT NOT NULL,
-	gene TEXT NOT NULL,
+	transcript TEXT NOT NULL UNIQUE
+);
+CREATE TABLE experiments (
+	id INTEGER PRIMARY KEY AUTOINCREMENT,
+	genome_id INTEGER NOT NULL REFERENCES available_genomes(id) ON UPDATE CASCADE,
+	experiment TEXT NOT NULL UNIQUE
+);
+CREATE TABLE upstream_number_of_peaks (
+	id INTEGER PRIMARY KEY AUTOINCREMENT,
+	genome_id INTEGER NOT NULL REFERENCES available_genomes(id) ON UPDATE CASCADE,
+	name INTEGER NOT NULL REFERENCES experiments(id) ON DELETE CASCADE,
+	gene INTEGER NOT NULL REFERENCES transcript(id) ON DELETE CASCADE,
 	_100Kb_Upstream_Number_of_Peaks REAL,
 	_99Kb_Upstream_Number_of_Peaks REAL,
 	_98Kb_Upstream_Number_of_Peaks REAL,
@@ -104,11 +123,23 @@ CREATE TABLE annotatedpeaks (
 	_4Kb_Upstream_Number_of_Peaks REAL,
 	_3Kb_Upstream_Number_of_Peaks REAL,
 	_2Kb_Upstream_Number_of_Peaks REAL,
-	_1Kb_Upstream_Number_of_Peaks REAL,
+	_1Kb_Upstream_Number_of_Peaks REAL
+);
+CREATE TABLE transcript_number_of_peaks (
+	id INTEGER PRIMARY KEY AUTOINCREMENT,
+	genome_id INTEGER NOT NULL REFERENCES available_genomes(id) ON UPDATE CASCADE,
+	name INTEGER NOT NULL REFERENCES experiments(id) ON DELETE CASCADE,
+	gene INTEGER NOT NULL REFERENCES transcript(id) ON DELETE CASCADE,
 	_5Prime_UTR_Number_of_Peaks REAL,
 	_Exons_Number_of_Peaks REAL,
 	_Introns_Number_of_Peaks REAL,
-	_3Prime_UTR_Number_of_Peaks REAL,
+	_3Prime_UTR_Number_of_Peaks REAL
+);
+CREATE TABLE gene_body_number_of_peaks (
+	id INTEGER PRIMARY KEY AUTOINCREMENT,
+	genome_id INTEGER NOT NULL REFERENCES available_genomes(id) ON UPDATE CASCADE,
+	name INTEGER NOT NULL REFERENCES experiments(id) ON DELETE CASCADE,
+	gene INTEGER NOT NULL REFERENCES transcript(id) ON DELETE CASCADE,
 	_Gene_Body_0_to_10_Number_of_Peaks REAL,
 	_Gene_Body_10_to_20_Number_of_Peaks REAL,
 	_Gene_Body_20_to_30_Number_of_Peaks REAL,
@@ -118,7 +149,13 @@ CREATE TABLE annotatedpeaks (
 	_Gene_Body_60_to_70_Number_of_Peaks REAL,
 	_Gene_Body_70_to_80_Number_of_Peaks REAL,
 	_Gene_Body_80_to_90_Number_of_Peaks REAL,
-	_Gene_Body_90_to_100_Number_of_Peaks REAL,
+	_Gene_Body_90_to_100_Number_of_Peaks REAL
+);
+CREATE TABLE downstream_number_of_peaks (
+	id INTEGER PRIMARY KEY AUTOINCREMENT,
+	genome_id INTEGER NOT NULL REFERENCES available_genomes(id) ON UPDATE CASCADE,
+	name INTEGER NOT NULL REFERENCES experiments(id) ON DELETE CASCADE,
+	gene INTEGER NOT NULL REFERENCES transcript(id) ON DELETE CASCADE,
 	_1Kb_Downstream_Number_of_Peaks REAL,
 	_2Kb_Downstream_Number_of_Peaks REAL,
 	_3Kb_Downstream_Number_of_Peaks REAL,
@@ -218,7 +255,13 @@ CREATE TABLE annotatedpeaks (
 	_97Kb_Downstream_Number_of_Peaks REAL,
 	_98Kb_Downstream_Number_of_Peaks REAL,
 	_99Kb_Downstream_Number_of_Peaks REAL,
-	_100Kb_Downstream_Number_of_Peaks REAL,
+	_100Kb_Downstream_Number_of_Peaks REAL
+);
+CREATE TABLE upstream_annotation (
+	id INTEGER PRIMARY KEY AUTOINCREMENT,
+	genome_id INTEGER NOT NULL REFERENCES available_genomes(id) ON UPDATE CASCADE,
+	name INTEGER NOT NULL REFERENCES experiments(id) ON DELETE CASCADE,
+	gene INTEGER NOT NULL REFERENCES transcript(id) ON DELETE CASCADE,
 	_100Kb_Upstream_Peaks_Information TEXT,
 	_99Kb_Upstream_Peaks_Information TEXT,
 	_98Kb_Upstream_Peaks_Information TEXT,
@@ -318,11 +361,23 @@ CREATE TABLE annotatedpeaks (
 	_4Kb_Upstream_Peaks_Information TEXT,
 	_3Kb_Upstream_Peaks_Information TEXT,
 	_2Kb_Upstream_Peaks_Information TEXT,
-	_1Kb_Upstream_Peaks_Information TEXT,
+	_1Kb_Upstream_Peaks_Information TEXT
+);
+CREATE TABLE transcript_annotation (
+	id INTEGER PRIMARY KEY AUTOINCREMENT,
+	genome_id INTEGER NOT NULL REFERENCES available_genomes(id) ON UPDATE CASCADE,
+	name INTEGER NOT NULL REFERENCES experiments(id) ON DELETE CASCADE,
+	gene INTEGER NOT NULL REFERENCES transcript(id) ON DELETE CASCADE,
 	_5Prime_UTR_Peaks_Information TEXT,
 	_Exons_Peaks_Information TEXT,
 	_Introns_Peaks_Information TEXT,
-	_3Prime_UTR_Peaks_Information TEXT,
+	_3Prime_UTR_Peaks_Information TEXT
+);
+CREATE TABLE gene_body_annotation (
+	id INTEGER PRIMARY KEY AUTOINCREMENT,
+	genome_id INTEGER NOT NULL REFERENCES available_genomes(id) ON UPDATE CASCADE,
+	name INTEGER NOT NULL REFERENCES experiments(id) ON DELETE CASCADE,
+	gene INTEGER NOT NULL REFERENCES transcript(id) ON DELETE CASCADE,
 	_Gene_Body_0_to_10_Peaks_Information TEXT,
 	_Gene_Body_10_to_20_Peaks_Information TEXT,
 	_Gene_Body_20_to_30_Peaks_Information TEXT,
@@ -332,7 +387,13 @@ CREATE TABLE annotatedpeaks (
 	_Gene_Body_60_to_70_Peaks_Information TEXT,
 	_Gene_Body_70_to_80_Peaks_Information TEXT,
 	_Gene_Body_80_to_90_Peaks_Information TEXT,
-	_Gene_Body_90_to_100_Peaks_Information TEXT,
+	_Gene_Body_90_to_100_Peaks_Information TEXT
+);
+CREATE TABLE downstream_annotation (
+	id INTEGER PRIMARY KEY AUTOINCREMENT,
+	genome_id INTEGER NOT NULL REFERENCES available_genomes(id) ON UPDATE CASCADE,
+	name INTEGER NOT NULL REFERENCES experiments(id) ON DELETE CASCADE,
+	gene INTEGER NOT NULL REFERENCES transcript(id) ON DELETE CASCADE,
 	_1Kb_Downstream_Peaks_Information TEXT,
 	_2Kb_Downstream_Peaks_Information TEXT,
 	_3Kb_Downstream_Peaks_Information TEXT,
@@ -432,8 +493,7 @@ CREATE TABLE annotatedpeaks (
 	_97Kb_Downstream_Peaks_Information TEXT,
 	_98Kb_Downstream_Peaks_Information TEXT,
 	_99Kb_Downstream_Peaks_Information TEXT,
-	_100Kb_Downstream_Peaks_Information TEXT,
-	UNIQUE (name, gene) ON CONFLICT REPLACE
+	_100Kb_Downstream_Peaks_Information TEXT
 );
 
 CREATE TABLE available_genomes (

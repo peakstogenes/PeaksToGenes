@@ -77,16 +77,16 @@ sub test_and_extract {
 
 sub test_name {
 	my $self = shift;
-	# Create an Annotatedpeak results set
-	my $annotated_peaks_result_set = $self->schema->resultset('Annotatedpeak');
+	# Create an experiments result set
+	my $experiment_result_set = $self->schema->resultset('Experiment');
 	# Search the Annotatedpeak results set for the user-defined name
-	my $annotated_peaks_search_results = $annotated_peaks_result_set->search(
+	my $experiment_search_results= $experiment_result_set->search(
 		{
-			name	=>	$self->name
+			experiment	=>	$self->name
 		}
 	);
 	# If the name is already used in the database, return an error to the user
-	while ( my $annotated_peaks_search_result = $annotated_peaks_search_results->next ) {
+	while ( my $experiment_search_result = $experiment_search_results->next ) {
 		die "\n\nThe user-defined experiment name: " . $self->name . ". Is already in use. Either delete those entries in the database or choose another experiment name.\n\n";
 	}
 }
