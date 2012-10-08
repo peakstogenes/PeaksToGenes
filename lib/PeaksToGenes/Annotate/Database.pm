@@ -1,11 +1,10 @@
-package PeaksToGenes::Database 0.001;
+package PeaksToGenes::Annotate::Database 0.001;
 use Moose;
 use Carp;
-use Data::Dumper;
 
 =head1 NAME
 
-PeaksToGenes::Database
+PeaksToGenes::Annotate::Database
 
 =head1 VERSION
 
@@ -15,15 +14,10 @@ Version 0.001
 
 =head1 SYNOPSIS
 
-This Module will insert the peaks to genes information in the database if
-desired by the user.
-
-It will also print the peaks to genes information and a summary table to
-file.
-
-=head1 SUBROUTINES/METHODS
-
-=cut
+This module is designed to parse the entries stored in the Hash Ref
+returned by PeaksToGenes::Annotate::BedTools, normalize the number of
+experimental intervals per Kb, and store the information in the
+PeaksToGenes SQLite database.
 
 =head2 Moose declarations
 
@@ -75,83 +69,28 @@ has base_regex	=>	(
 	}
 );
 
-has deciles_summary_hash	=>	(
-	is				=>	'ro',
-	isa				=>	'HashRef',
-	required		=>	1,
-	default			=>	sub {
-		my $self = shift;
-		my $summary_hash = {};
-		return $summary_hash;
-	},
-);
+=head2 parse_and_store
 
-has transcript_regions_summary_hash	=>	(
-	is				=>	'ro',
-	isa				=>	'HashRef',
-	required		=>	1,
-	default			=>	sub {
-		my $self = shift;
-		my $summary_hash = {};
-		return $summary_hash;
-	},
-);
-
-
-=head2 summary_and_out
-
-This subroutine will take the peaks to genes file structure and write
-it and a summary to file.
+This subroutine is the main function called by the PeaksToGenes::Annotate
+controller class.
 
 =cut
 
-sub summary_and_out {
+sub parse_and_store {
 	my $self = shift;
 
-	# Run the PeaksToGenes::Database::extract_genome_id subroutine to extract
-	# the genome id key for the user-defined genome
+	# Run the PeaksToGenes::Annotate::Database::extract_genome_id
+	# subroutine to extract the genome id key for the user-defined genome.
 	my $genome_id = $self->extract_genome_id;
 
-	# Run the PeaksToGenes::Database::parse_row_items function to return an
-	# Array Ref for the peaks_to_genes summary table and a DBIx::Class
-	# insert statement.
+	# Run the PeaksToGenes::Annotate::Database::parse_row_items function to
+	# return an Array Ref for the peaks_to_genes summary table and a
+	# DBIx::Class insert statement.
 	my $insert = $self->parse_row_items($genome_id);
 	
-	# Run the PeaksToGenes::Database::insert_peaks subroutine to insert the
+	# Run the PeaksToGenes::Annotate::Database::insert_peaks subroutine to insert the
 	# extracted information into the PeaksToGenes database.
 	$self->insert_peaks($insert);
-#
-#	# Run the PeaksToGenes::Database::create_header_lines_and_parse_summary
-#	# subroutine to parse the summary file and return a header for the
-#	# peaks to genes table and a summary file table
-#	my ($peaks_to_genes_header, $transcript_regions_summary_file,
-#		$deciles_summary_file) =
-#	$self->create_header_lines_and_parse_summary;
-#
-#	# Add the headers to the front of the out arrays
-#	unshift(@$peaks_to_genes, join("\t", @$peaks_to_genes_header));
-#
-#	# Write the peaks to genes array to file
-#	open my $peaks_to_genes_out, ">", $self->name .
-#	"_Peaks_To_Genes_Full_Table.txt" or die "Could not write to file: " .
-#	$self->name . "_Peaks_To_Genes_Full_Table.txt\n\n$!";
-#	print $peaks_to_genes_out join("\n", @$peaks_to_genes);
-#
-#	# Write the transcript regions summary array to file
-#	open my $transcript_regions_summary_out, ">", $self->name .
-#	"_Peaks_To_Genes_Transcript_Regions_Summary_Table.txt" or die 
-#	"Could not write to file: " . $self->name .
-#	"_Peaks_To_Genes_Transcript_Regions_Summary_Table.txt\n\n$!";
-#	print $transcript_regions_summary_out join("\n",
-#		@$transcript_regions_summary_file);
-#
-#	# Write the deciles summary array to files
-#	open my $deciles_summary_out, ">", $self->name .
-#	"_Peaks_To_Genes_Deciles_Summary_Table.txt" or die 
-#	"Could not write to file: " . $self->name .
-#	"_Peaks_To_Genes_Deciles_Summary_Table.txt\n\n$!";
-#	print $deciles_summary_out join("\n",
-#		@$deciles_summary_file);
 }
 
 sub parse_row_items {
@@ -188,82 +127,100 @@ sub parse_row_items {
 				$location = $2;
 			}
 
-			# Append the information type to the location string
-			my $peak_number = $location . '_Number_of_Peaks';
-			my $peak_info = $location . '_Peaks_Information';
+			# If the location is found by the regular expression normalize
+			# the number of experimental intervals found per genomic
+			# interval based on the length of the genomic interval
+			if ($location) {
+				# Append the information type to the location string
+				my $peak_number = $location . '_Number_of_Peaks';
+				my $peak_info = $location . '_Peaks_Information';
+				my $interval_size = $location . '_Interval_Size';
 
-			# Add the number of peaks column to the row items
-			if ( $self->indexed_peaks->{$accession}{$location .
-				'_Interval_Size'}  &&
-				$self->indexed_peaks->{$accession}{$location .
-				'_Interval_Size'} > 0 ) {
-				# Normalize the number of peaks found in the interval to
-				# peaks per Kb in place
-				$self->indexed_peaks->{$accession}{$peak_number} /=
-				($self->indexed_peaks->{$accession}{$location .
-					'_Interval_Size'} / 1000);
+				# Normalize the number of intervals found in place
+				if ( $self->indexed_peaks->{$accession}{$location .
+					'_Interval_Size'}  &&
+					$self->indexed_peaks->{$accession}{$location .
+					'_Interval_Size'} > 0 ) {
+					# Normalize the number of peaks found in the interval to
+					# peaks per Kb in place
+					$self->indexed_peaks->{$accession}{$peak_number} /=
+					($self->indexed_peaks->{$accession}{$interval_size} /
+						1000);
+				}
+			} else {
+				croak "There was a problem determining the location of " .
+				"the $file_string. Please check that this genome is " .
+				"installed correctly\n\n";
 			}
 		}
-
-		# Pre-declare a Hash Ref for each type of insert for this line
-		my $upstream_annotation_insert_line = {};
-		my $downstream_annotation_insert_line = {};
-		my $transcript_annotation_insert_line = {};
-		my $gene_body_annotation_insert_line = {};
-		my $upstream_number_of_peaks_insert_line = {};
-		my $downstream_number_of_peaks_insert_line = {};
-		my $gene_body_number_of_peaks_insert_line = {};
-		my $transcript_number_of_peaks_insert_line = {};
 
 		# Search for the transcript id from the transcripts table
 		my $transcript_id = $self->extract_transcript_id($accession);
 
-		$gene_body_annotation_insert_line->{gene} = $transcript_id;
-		$gene_body_annotation_insert_line->{genome_id} = $genome_id;
+		# Pre-define a Hash Ref for each type of insert for this line
+		my $upstream_annotation_insert_line = {
+			gene		=>	$transcript_id,
+			genome_id	=>	$genome_id,
+		};
+		my $downstream_annotation_insert_line = {
+			gene		=>	$transcript_id,
+			genome_id	=>	$genome_id,
+		};
+		my $transcript_annotation_insert_line = {
+			gene		=>	$transcript_id,
+			genome_id	=>	$genome_id,
+		};
+		my $gene_body_annotation_insert_line = {
+			gene		=>	$transcript_id,
+			genome_id	=>	$genome_id,
+		};
+		my $upstream_number_of_peaks_insert_line = {
+			gene		=>	$transcript_id,
+			genome_id	=>	$genome_id,
+		};
+		my $downstream_number_of_peaks_insert_line = {
+			gene		=>	$transcript_id,
+			genome_id	=>	$genome_id,
+		};
+		my $gene_body_number_of_peaks_insert_line = {
+			gene		=>	$transcript_id,
+			genome_id	=>	$genome_id,
+		};
+		my $transcript_number_of_peaks_insert_line = {
+			gene		=>	$transcript_id,
+			genome_id	=>	$genome_id,
+		};
 
-		$gene_body_number_of_peaks_insert_line->{gene} = $transcript_id;
-		$gene_body_number_of_peaks_insert_line->{genome_id} = $genome_id;
-
-		$upstream_annotation_insert_line->{gene} = $transcript_id;
-		$upstream_annotation_insert_line->{genome_id} = $genome_id;
-
-		$downstream_annotation_insert_line->{gene} = $transcript_id;
-		$downstream_annotation_insert_line->{genome_id} = $genome_id;
-
-		$transcript_annotation_insert_line->{gene} = $transcript_id;
-		$transcript_annotation_insert_line->{genome_id} = $genome_id;
-		
-		$upstream_number_of_peaks_insert_line->{gene} = $transcript_id;
-		$upstream_number_of_peaks_insert_line->{genome_id} = $genome_id;
-
-
-		$downstream_number_of_peaks_insert_line->{gene} = $transcript_id;
-		$downstream_number_of_peaks_insert_line->{genome_id} = $genome_id;
-
-		$transcript_number_of_peaks_insert_line->{gene} = $transcript_id;
-		$transcript_number_of_peaks_insert_line->{genome_id} = $genome_id;
-
-
+		# Add the 3'-UTR peak information and number of peaks to the
+		# transcript information insert lines
 		$transcript_number_of_peaks_insert_line->{_3prime_utr_number_of_peaks} =
 		$self->indexed_peaks->{$accession}{_3Prime_UTR_Number_of_Peaks};
 		$transcript_annotation_insert_line->{_3prime_utr_peaks_information} =
 		$self->indexed_peaks->{$accession}{_3Prime_UTR_Peaks_Information};
 
+		# Add the 5'-UTR peak information and number of peaks to the
+		# transcript information insert lines
 		$transcript_number_of_peaks_insert_line->{_5prime_utr_number_of_peaks} =
 		$self->indexed_peaks->{$accession}{_5Prime_UTR_Number_of_Peaks};
 		$transcript_annotation_insert_line->{_5prime_utr_peaks_information} =
 		$self->indexed_peaks->{$accession}{_5Prime_UTR_Peaks_Information};
 
+		# Add the exons peak information and number of peaks to the
+		# transcript information insert lines
 		$transcript_number_of_peaks_insert_line->{_exons_number_of_peaks} =
 		$self->indexed_peaks->{$accession}{_Exons_Number_of_Peaks};
 		$transcript_annotation_insert_line->{_exons_peaks_information} =
 		$self->indexed_peaks->{$accession}{_Exons_Peaks_Information};
 
+		# Add the introns peak information and number of peaks to the
+		# transcript information insert lines
 		$transcript_number_of_peaks_insert_line->{_introns_number_of_peaks} =
 		$self->indexed_peaks->{$accession}{_Introns_Number_of_Peaks};
 		$transcript_annotation_insert_line->{_introns_peaks_information} =
 		$self->indexed_peaks->{$accession}{_Introns_Peaks_Information};
 
+		# Iterate by decile to add the decile peak information and number
+		# of peaks to the gene body insert lines
 		for (my $i = 0; $i < 100; $i += 10) {
 			$gene_body_number_of_peaks_insert_line->{'_gene_body_' . $i .
 			'_to_' . ($i + 10) . '_number_of_peaks'} =
@@ -275,6 +232,9 @@ sub parse_row_items {
 			. ($i + 10) . '_Peaks_Information'};
 		}
 
+		# Iterate through the upstream and downstream locations and add the
+		# peaks information and number of peaks to the upstream and
+		# downstream peaks insert lines
 		for ( my $i = 1; $i <= 100; $i++ ) {
 
 			$upstream_annotation_insert_line->{'_' . $i .
@@ -299,7 +259,7 @@ sub parse_row_items {
 
 		}
 
-		# Add the insert lines to the insert statements
+		# Add the insert lines to the insert statement
 		push(@{$insert->{upstream_annotations}},
 			$upstream_annotation_insert_line);
 		push(@{$insert->{downstream_annotations}},
@@ -319,6 +279,7 @@ sub parse_row_items {
 
 	}
 
+	# Return the insert statement to the main subroutine
 	return $insert;
 }
 
@@ -331,10 +292,15 @@ This subroutine is called to insert the DBIx statement into the database
 sub insert_peaks {
 	my ($self, $insert) = @_;
 
+	# Because the insert statement can be quite large, use the transaction
+	# scope guard to increase the speed of the transaction by turning off a
+	# few failsafe mechanisms.
 	my $guard = $self->schema->txn_scope_guard;
 
 	$self->schema->resultset('Experiment')->populate([$insert]);
 
+	# After the transaction is complete, it is necessary to explicitly
+	# commit the transaction
 	$guard->commit;
 	
 }
@@ -342,31 +308,22 @@ sub insert_peaks {
 sub extract_genome_id {
 	my $self = shift;
 
-	# Pre-define an integer to hold the genome id
-	my $genome_id = 0;
-
-	# Create an AvailableGenome result set
-	my $available_genomes_result_set = $self->schema->resultset('AvailableGenome');
-
 	# Search the AvailableGenome result set for the id that corresponds
 	# to the user-defined genome
-	my $available_genomes_search_results = $available_genomes_result_set->search(
+	my $available_genomes_search_results =
+	$self->schema->resultset('AvailableGenome')->find(
 		{
 			genome	=>	$self->genome
 		}
 	);
-
-	# Extract the genome id
-	while ( my $available_genomes_search_result =
-		$available_genomes_search_results->next ) {
-		$genome_id = $available_genomes_search_result->id;
-	}
-
-	return $genome_id;
+	
+	# Return the genomic index id number
+	return $available_genomes_search_results->id;
 }
 
 sub extract_transcript_id {
 	my ($self, $accession) = @_;
+
 	# Search for the transcript id from the transcripts table
 	my $transcript_search_result =
 	$self->schema->resultset('Transcript')->find(
@@ -374,6 +331,7 @@ sub extract_transcript_id {
 			transcript	=>	$accession
 		}
 	);
+
 	return $transcript_search_result->id;
 }
 	
@@ -395,7 +353,7 @@ automatically be notified of progress on your bug as I make changes.
 
 You can find documentation for this module with the perldoc command.
 
-    perldoc PeaksToGenes::Database
+    perldoc PeaksToGenes::Annotate::Database
 
 
 You can also look for information at:
@@ -437,7 +395,7 @@ See http://dev.perl.org/licenses/ for more information.
 
 =cut
 
-1; # End of PeaksToGenes::Database
+1; # End of PeaksToGenes::Annotate::Database
 
 =head1 AUTHOR
 
@@ -456,7 +414,7 @@ automatically be notified of progress on your bug as I make changes.
 
 You can find documentation for this module with the perldoc command.
 
-    perldoc PeaksToGenes::Database
+    perldoc PeaksToGenes::Annotate::Database
 
 
 You can also look for information at:
@@ -498,4 +456,4 @@ See http://dev.perl.org/licenses/ for more information.
 
 =cut
 
-1; # End of PeaksToGenes::Database
+1; # End of PeaksToGenes::Annotate::Database
