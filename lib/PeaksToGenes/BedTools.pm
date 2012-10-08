@@ -82,12 +82,13 @@ sub annotate_peaks {
 	my $index_files = $self->index_files;
 	# Make a call to create_blank_index to make a blank genome-defined
 	# peaks to genes structure
-	print "Creating a blank index for your genome...\n\n";
-	my $indexed_peaks = $self->create_blank_index($index_files);
+#	print "Creating a blank index for your genome...\n\n";
+#	my $indexed_peaks = $self->create_blank_index($index_files);
 	print "Now aligning your peaks...\n\n";
 	# Make a call to align_peaks to determine to overlap of peaks relative
 	# to RefSeq gene positions
-	$indexed_peaks = $self->align_peaks($indexed_peaks);
+#	$indexed_peaks = $self->align_peaks($indexed_peaks);
+	my $indexed_peaks = $self->align_peaks;
 	print "\n";
 	return $indexed_peaks;
 }
@@ -193,10 +194,13 @@ sub check_bed_file {
 }
 
 sub align_peaks {
-	my ($self, $indexed_peaks) = @_;
+#	my ($self, $indexed_peaks) = @_;
+	my $self = shift;
 	my $index_files = $self->index_files;
 	my $base_regex = $self->base_regex;
 	my $summits_file = $self->summits;
+	# Pre-declare a Hash Ref to hold the intersected peaks information
+	my $indexed_peaks = {};
 	# Iterate through the ordered index, and intersect the Summits file
 	# with the index file. Extract the information from any intersections
 	# that occur and store them in the indexed_peaks Hash Ref.
@@ -219,12 +223,36 @@ sub align_peaks {
 					$summit_score, $index_chr, $index_start, $index_stop,
 					$index_gene, $overlap) = split(/\t/,
 					$intersected_peak);
-				$indexed_peaks->{$index_gene}{$peak_number}++;
-				$indexed_peaks->{$index_gene}{$peak_info} .= ' /// ' .
-				join(":", $summit_chr, $summit_start, $summit_end,
-					$summit_name, $summit_score) . ' /// ';
-				$indexed_peaks->{$index_gene}{$location . '_Interval_Size'}
-				+= ($index_stop - $index_start + 1);
+#				$indexed_peaks->{$index_gene}{$peak_number}++;
+				if ($indexed_peaks->{$index_gene}{$peak_number} ) {
+					$indexed_peaks->{$index_gene}{$peak_number}++;
+				} else {
+					$indexed_peaks->{$index_gene}{$peak_number} = 1;
+				}
+#				$indexed_peaks->{$index_gene}{$peak_info} .= ' /// ' .
+#				join(":", $summit_chr, $summit_start, $summit_end,
+#					$summit_name, $summit_score) . ' /// ';
+				if ( $indexed_peaks->{$index_gene}{$peak_info} ) {
+					$indexed_peaks->{$index_gene}{$peak_info} .= 
+					' /// ' . join(":", $summit_chr, $summit_start,
+						$summit_end, $summit_name, $summit_score) . 
+					' /// ';
+				} else {
+					$indexed_peaks->{$index_gene}{$peak_info} = 
+					' /// ' . join(":", $summit_chr, $summit_start,
+						$summit_end, $summit_name, $summit_score) . 
+					' /// ';
+				}
+#				$indexed_peaks->{$index_gene}{$location . '_Interval_Size'}
+#				+= ($index_stop - $index_start + 1);
+				if ( $indexed_peaks->{$index_gene}{$location .
+					'_Interval_Size'} ) {
+					$indexed_peaks->{$index_gene}{$location .
+					'_Interval_Size'} += ($index_stop - $index_start + 1);
+				} else {
+					$indexed_peaks->{$index_gene}{$location . '_Interval_Size'}
+					= ($index_stop - $index_start + 1);
+				}
 			}
 		} else {
 			croak "There was a problem determining the location of the index file relative to transcription start site";
