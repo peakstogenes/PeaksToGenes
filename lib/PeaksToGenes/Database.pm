@@ -1,11 +1,11 @@
-package PeaksToGenes::Out 0.001;
+package PeaksToGenes::Database 0.001;
 use Moose;
 use Carp;
 use Data::Dumper;
 
 =head1 NAME
 
-PeaksToGenes::Out
+PeaksToGenes::Database
 
 =head1 VERSION
 
@@ -108,20 +108,20 @@ it and a summary to file.
 sub summary_and_out {
 	my $self = shift;
 
-	# Run the PeaksToGenes::Out::extract_genome_id subroutine to extract
+	# Run the PeaksToGenes::Database::extract_genome_id subroutine to extract
 	# the genome id key for the user-defined genome
 	my $genome_id = $self->extract_genome_id;
 
-	# Run the PeaksToGenes::Out::parse_row_items function to return an
+	# Run the PeaksToGenes::Database::parse_row_items function to return an
 	# Array Ref for the peaks_to_genes summary table and a DBIx::Class
 	# insert statement.
-	my ($peaks_to_genes, $insert) = $self->parse_row_items($genome_id);
+	my $insert = $self->parse_row_items($genome_id);
 	
-	# Run the PeaksToGenes::Out::insert_peaks subroutine to insert the
+	# Run the PeaksToGenes::Database::insert_peaks subroutine to insert the
 	# extracted information into the PeaksToGenes database.
 	$self->insert_peaks($insert);
 #
-#	# Run the PeaksToGenes::Out::create_header_lines_and_parse_summary
+#	# Run the PeaksToGenes::Database::create_header_lines_and_parse_summary
 #	# subroutine to parse the summary file and return a header for the
 #	# peaks to genes table and a summary file table
 #	my ($peaks_to_genes_header, $transcript_regions_summary_file,
@@ -155,11 +155,7 @@ sub summary_and_out {
 }
 
 sub parse_row_items {
-#	my ($self, $genome_id, $experiment_id) = @_;
 	my ($self, $genome_id) = @_;
-
-	# Pre-declare an Array Ref to hold the peaks to genes info structure
-	my $peaks_to_genes = [];
 
 	# Pre-declare an Array Ref inside a Hash Ref to hold the insert lines
 	# for each table:
@@ -182,13 +178,6 @@ sub parse_row_items {
 	# Iterate through the genes keys in the indexed peaks structure
 	foreach my $accession ( keys %{$self->indexed_peaks} ) {
 
-		# Pre-declare an Array Ref to hold the columns for the row corresponding
-		# to the current RefSeq accession
-		my $row_items = [$accession];
-
-		# Pre-declare an Array Ref to hold the row info items
-		my $row_info_items = [];
-
 		# Iterate through the ordered index and extract the required information
 		# from the indexed_peaks Hash Ref
 		foreach my $file_string (@{$self->ordered_index}) {
@@ -204,58 +193,17 @@ sub parse_row_items {
 			my $peak_info = $location . '_Peaks_Information';
 
 			# Add the number of peaks column to the row items
-			if ( $self->indexed_peaks->{$accession}{$location . '_Interval_Size'} > 0 ) {
+			if ( $self->indexed_peaks->{$accession}{$location .
+				'_Interval_Size'}  &&
+				$self->indexed_peaks->{$accession}{$location .
+				'_Interval_Size'} > 0 ) {
 				# Normalize the number of peaks found in the interval to
 				# peaks per Kb in place
 				$self->indexed_peaks->{$accession}{$peak_number} /=
 				($self->indexed_peaks->{$accession}{$location .
 					'_Interval_Size'} / 1000);
-				# Add the normalized peaks per Kb to the row items
-				push(@$row_items, $self->indexed_peaks->{$accession}{$peak_number});
-				# Add the number of peaks for this location to the summary
-				# file. If the location is a decile do not add it to the
-				# transcript_regions_summary_hash, and likewise if the location
-				# is a transcript region, do not add it to the
-				# deciles_summary_hash
-				if ( $location =~ /gene_body/ ) {
-					$self->deciles_summary_hash->{$location} +=
-					$self->indexed_peaks->{$accession}{$peak_number};
-				} elsif ( $location =~ /5Prime|Exons|3Prime|3Prime/ ) {
-					$self->transcript_regions_summary_hash->{$location} +=
-					$self->indexed_peaks->{$accession}{$peak_number};
-				} else {
-					$self->deciles_summary_hash->{$location} +=
-					$self->indexed_peaks->{$accession}{$peak_number};
-					$self->transcript_regions_summary_hash->{$location} +=
-					$self->indexed_peaks->{$accession}{$peak_number};
-				}
-			} else {
-				push(@$row_items, $self->indexed_peaks->{$accession}{$peak_number});
-				# Add the number of peaks for this location to the summary
-				# file. If the location is a decile do not add it to the
-				# transcript_regions_summary_hash, and likewise if the location
-				# is a transcript region, do not add it to the
-				# deciles_summary_hash
-				if ( $location =~ /gene_body/ ) {
-					$self->deciles_summary_hash->{$location} +=
-					$self->indexed_peaks->{$accession}{$peak_number};
-				} elsif ( $location =~ /5Prime|Exons|3Prime|3Prime/ ) {
-					$self->transcript_regions_summary_hash->{$location} +=
-					$self->indexed_peaks->{$accession}{$peak_number};
-				} else {
-					$self->deciles_summary_hash->{$location} +=
-					$self->indexed_peaks->{$accession}{$peak_number};
-					$self->transcript_regions_summary_hash->{$location} +=
-					$self->indexed_peaks->{$accession}{$peak_number};
-				}
 			}
-
-			# Add the number of peaks column to the row info items
-			push(@$row_info_items, $self->indexed_peaks->{$accession}{$peak_info});
 		}
-
-		# Add the row info items to the row items
-		push (@$row_items, @$row_info_items);
 
 		# Pre-declare a Hash Ref for each type of insert for this line
 		my $upstream_annotation_insert_line = {};
@@ -268,13 +216,7 @@ sub parse_row_items {
 		my $transcript_number_of_peaks_insert_line = {};
 
 		# Search for the transcript id from the transcripts table
-		my $transcript_search_result =
-		$self->schema->resultset('Transcript')->find(
-			{
-				transcript	=>	$accession
-			}
-		);
-		my $transcript_id = $transcript_search_result->id;
+		my $transcript_id = $self->extract_transcript_id($accession);
 
 		$gene_body_annotation_insert_line->{gene} = $transcript_id;
 		$gene_body_annotation_insert_line->{genome_id} = $genome_id;
@@ -357,9 +299,6 @@ sub parse_row_items {
 
 		}
 
-		# Push the row items onto the peaks to genes table
-		push(@$peaks_to_genes, join("\t", @$row_items));
-
 		# Add the insert lines to the insert statements
 		push(@{$insert->{upstream_annotations}},
 			$upstream_annotation_insert_line);
@@ -380,98 +319,12 @@ sub parse_row_items {
 
 	}
 
-	return ($peaks_to_genes, $insert);
-}
-
-sub create_header_lines_and_parse_summary {
-	my $self = shift;
-
-	# Copy the base regular expression into a scalar string
-	my $base_regex = $self->base_regex;
-
-	# Pre-declare an Array Ref to hold the transcript regions summary file header
-	my $transcript_regions_summary_header = [];
-
-	# Pre-declare an Array Ref to hold the deciles summary file header
-	my $deciles_summary_header = [];
-
-	# Pre-define an Array Ref to hold the transcript regions summary file numbers
-	my $transcript_regions_summary_file_numbers = [];
-
-	# Pre-define an Array Ref to hold the deciles summary file numbers
-	my $deciles_summary_file_numbers = [];
-
-	# Pre-declare an Array Ref to hold the peaks to genes header for peak
-	# numbers
-	my $peaks_to_genes_header = [];
-
-	# Pre-declare an Array Ref to hold to peaks to genes header for peak
-	# info
-	my $peaks_to_genes_info_header = [];
-
-	# Iterate through the locations in the summary hash by using
-	# the ordered index
-	foreach my $file_string (@{$self->ordered_index}) {
-		# Create a string to hold the relative location
-		my $location = '';
-		if ($file_string =~ qr/($base_regex)(.+?)\.bed$/ ) {
-			$location = $2;
-		}
-
-		# Add the number of peaks for this location to the summary
-		# file. If the location is a decile do not add it to the
-		# transcript_regions_summary_header or
-		# transcript_regions_summary_file_numbers, and likewise if the location
-		# is a transcript region, do not add it to the
-		# deciles_summary_header or deciles_summary_file_numbers
-		if ( $location =~ /gene_body/ ) {
-			push(@$deciles_summary_file_numbers,
-				$self->summary_hash->{$location});
-			push(@$deciles_summary_header, $self->genome . $location .
-				"_Aggregate_Number_of_Peaks");
-		} elsif ( $location =~ /5Prime|Exons|3Prime|3Prime/ ) {
-			push(@$transcript_regions_summary_file_numbers,
-				$self->summary_hash->{$location});
-			push(@$transcript_regions_summary_header, $self->genome .
-				$location . "_Aggregate_Number_of_Peaks");
-		} else {
-			push(@$deciles_summary_file_numbers,
-				$self->summary_hash->{$location});
-			push(@$deciles_summary_header, $self->genome . $location .
-				"_Aggregate_Number_of_Peaks");
-			push(@$transcript_regions_summary_file_numbers,
-				$self->summary_hash->{$location});
-			push(@$transcript_regions_summary_header, $self->genome .
-				$location . "_Aggregate_Number_of_Peaks");
-		}
-		push(@$peaks_to_genes_header, $self->genome . $location .
-			"_Number_of_Peaks");
-		push(@$peaks_to_genes_info_header, $self->genome . $location .
-			"_Peaks_Information");
-	}
-
-	# Combine the peak number and peak information header Arrays
-	push(@$peaks_to_genes_header, @$peaks_to_genes_info_header);
-
-	# Combine the summary file header and numbers for both the transcript
-	# regions and deciles
-	my $transcript_regions_summary_file = join("\n", join("\t",
-			@$transcript_regions_summary_header), join("\t",
-			@$transcript_regions_summary_file_numbers)
-	);
-	my $deciles_summary_file = join("\n", join("\t",
-			@$deciles_summary_header), join("\t",
-			@$deciles_summary_file_numbers)
-	);
-
-	return ($peaks_to_genes_header, $transcript_regions_summary_file,
-		$deciles_summary_file);
+	return $insert;
 }
 
 =head2 insert_peaks
 
-This subroutine is called when the user has flagged that they want to permanently
-store the peaks to genes information in the database.
+This subroutine is called to insert the DBIx statement into the database
 
 =cut
 
@@ -484,15 +337,6 @@ sub insert_peaks {
 
 	$guard->commit;
 	
-	# Insert each statement into it's respective table
-#	$self->schema->resultset('UpstreamAnnotation')->populate($upstream_annotation_insert);
-#	$self->schema->resultset('DownstreamAnnotation')->populate($downstream_annotation_insert);
-#	$self->schema->resultset('TranscriptAnnotation')->populate($transcript_annotation_insert);
-#	$self->schema->resultset('GeneBodyAnnotation')->populate($gene_body_annotation_insert);
-#	$self->schema->resultset('UpstreamNumberOfPeaks')->populate($upstream_number_of_peaks_insert);
-#	$self->schema->resultset('DownstreamNumberOfPeaks')->populate($downstream_number_of_peaks_insert);
-#	$self->schema->resultset('TranscriptNumberOfPeaks')->populate($transcript_number_of_peaks_insert);
-#	$self->schema->resultset('GeneBodyNumberOfPeaks')->populate($gene_body_number_of_peaks_insert);
 }
 
 sub extract_genome_id {
@@ -521,6 +365,18 @@ sub extract_genome_id {
 	return $genome_id;
 }
 
+sub extract_transcript_id {
+	my ($self, $accession) = @_;
+	# Search for the transcript id from the transcripts table
+	my $transcript_search_result =
+	$self->schema->resultset('Transcript')->find(
+		{
+			transcript	=>	$accession
+		}
+	);
+	return $transcript_search_result->id;
+}
+	
 
 =head1 AUTHOR
 
@@ -539,7 +395,7 @@ automatically be notified of progress on your bug as I make changes.
 
 You can find documentation for this module with the perldoc command.
 
-    perldoc PeaksToGenes::Out
+    perldoc PeaksToGenes::Database
 
 
 You can also look for information at:
@@ -581,7 +437,7 @@ See http://dev.perl.org/licenses/ for more information.
 
 =cut
 
-1; # End of PeaksToGenes::Out
+1; # End of PeaksToGenes::Database
 
 =head1 AUTHOR
 
@@ -600,7 +456,7 @@ automatically be notified of progress on your bug as I make changes.
 
 You can find documentation for this module with the perldoc command.
 
-    perldoc PeaksToGenes::Out
+    perldoc PeaksToGenes::Database
 
 
 You can also look for information at:
@@ -642,4 +498,4 @@ See http://dev.perl.org/licenses/ for more information.
 
 =cut
 
-1; # End of PeaksToGenes::Out
+1; # End of PeaksToGenes::Database
