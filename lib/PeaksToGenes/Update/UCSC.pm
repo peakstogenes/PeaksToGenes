@@ -464,22 +464,46 @@ sub get_decile_coordinates {
 	# approximately equal lengths.
 	my $gene_body_length = $refseq->{txEnd} - $refseq->{txStart};
 	my $decile_length = int(($gene_body_length / 10) + 0.5);
-	for ( my $decile = 1; $decile < 10; $decile++ ) {
-		my $decile_start = $refseq->{txStart} + ($decile_length *
-			($decile-1));
-		my $decile_stop = $decile_start + $decile_length - 1;
-		push (@{$genomic_coordinates->{'decile_coordinates'}{$decile}},
-			join("\t", $refseq->{chrom}, $decile_start, $decile_stop,
-				$refseq->{name})
+	if ( $refseq->{strand} eq '+' ) {
+		for ( my $decile = 1; $decile < 10; $decile++ ) {
+			my $decile_start = $refseq->{txStart} + ($decile_length *
+				($decile-1));
+			my $decile_stop = $decile_start + $decile_length - 1;
+			push (@{$genomic_coordinates->{'decile_coordinates'}{$decile}},
+				join("\t", $refseq->{chrom}, $decile_start, $decile_stop,
+					$refseq->{name})
+			);
+		}
+		my $tenth_decile_start = (($refseq->{txStart} + (9 * $decile_length)) <
+			$refseq->{txEnd} ? ($refseq->{txStart} + (9 * $decile_length)) :
+			$refseq->{txEnd});
+		push (@{$genomic_coordinates->{'decile_coordinates'}{10}}, join("\t",
+				$refseq->{chrom}, $tenth_decile_start,
+				($refseq->{txEnd}), $refseq->{name})
 		);
+	} elsif ( $refseq->{strand} eq '-' ) {
+		for ( my $decile = 1; $decile < 10; $decile++ ) {
+			my $decile_stop = $refseq->{txEnd} - ($decile_length *
+				($decile-1)) - 1;
+			my $decile_start = $decile_stop - $decile_length;
+			push (@{$genomic_coordinates->{'decile_coordinates'}{$decile}},
+				join("\t", $refseq->{chrom}, $decile_start, $decile_stop,
+					$refseq->{name})
+			);
+		}
+		my $tenth_decile_end = (($refseq->{txEnd} - (9 * $decile_length)
+			- 1) >
+			$refseq->{txStart} ? ($refseq->{txEnd} - (9 * $decile_length) -
+			1) :
+			$refseq->{txStart});
+		push (@{$genomic_coordinates->{'decile_coordinates'}{10}}, join("\t",
+				$refseq->{chrom}, $refseq->{txStart},
+				$tenth_decile_end, $refseq->{name})
+		);
+	} else {
+		croak "There was a problem fetching the strand for $refseq->{name}
+		from UCSC.";
 	}
-	my $tenth_decile_start = (($refseq->{txStart} + (9 * $decile_length)) <
-		$refseq->{txEnd} ? ($refseq->{txStart} + (9 * $decile_length)) :
-		$refseq->{txEnd});
-	push (@{$genomic_coordinates->{'decile_coordinates'}{10}}, join("\t",
-			$refseq->{chrom}, $tenth_decile_start,
-			($refseq->{txEnd}), $refseq->{name})
-	);
 	return $genomic_coordinates;
 }
 

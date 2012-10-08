@@ -74,12 +74,16 @@ sub update {
 	my $available_genomes_insert = $self->create_statement($base_files);
 	# Make a call to the update_database subroutine to insert the lines
 	# into the database
+	my ($genome_id, $promoter_file) =
 	$self->update_database($available_genomes_insert);
+	# Make a call to the update_transcripts subroutine to extract the
+	# transcript accessions and insert them into the transcripts table
+	$self->update_transcripts($genome_id, $promoter_file);
 }
 
 sub create_statement {
 	my ($self, $base_files) = @_;
-	# Create a Hash Ref to insert into the available_genomes tables
+	# Create a Hash Ref to insert into the available_genomes table
 	my $available_genomes_insert = [
 		{
 			genome	=>	$self->genome,
@@ -104,7 +108,34 @@ sub update_database {
 	my ($self, $available_genomes_insert) = @_;
 	# Create an instance of the AvailableGenome results set and insert files
 	my $available_genomes_results_set = $self->schema->resultset('AvailableGenome');
+	my $available_genome_insert_result =
 	$available_genomes_results_set->update_or_create(@$available_genomes_insert);
+	return ($available_genome_insert_result->id,
+		$available_genome_insert_result->_1kb_upstream_peaks_file);
+}
+
+sub update_transcripts {
+	my ($self, $genome_id, $promoter_fh) = @_;
+	# Pre-declare an Array Ref to hold the populate statement for the
+	# transcripts in the user-defined genome.
+	my $transcripts_statement = [];
+	# Open the 1Kb upstream peaks file, iterate through and add the
+	# transcript accessions to the insert statement
+	open my $promoter_file, "<", $promoter_fh or 
+	croak "Could not read from $promoter_fh $!\n";
+	while (<$promoter_file>) {
+		my $line = $_;
+		chomp($line);
+		my ($chr, $start, $stop, $accession) = split(/\t/, $line);
+		push(@$transcripts_statement,
+			{
+				genome_id	=>	$genome_id,
+				transcript	=>	$accession,
+			}
+		);
+	}
+	# Populate the transcripts table
+	$self->schema->resultset('Transcript')->populate($transcripts_statement);
 }
 
 =head1 AUTHOR
