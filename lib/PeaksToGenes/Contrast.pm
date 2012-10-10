@@ -106,6 +106,19 @@ sub test_and_contrast {
 	);
 	my ($valid_test_genes, $invalid_test_genes, $valid_background_genes,
 		$invalid_background_genes) = $genes->extract_genes;
+
+	# Create an instance of PeaksToGenes::Contrast::GenomicRegions and run
+	# PeaksToGenes::Contrast::GenomicRegions::extract_regions to return a
+	# Hash Ref containing two Hash Refs (one for the test and one for the
+	# background) each of which will contain two Array Refs for each
+	# genomic region (one for the peaks per Kb, and one for the peak
+	# scores).
+	my $genomic_regions = PeaksToGenes::Contrast::GenomicRegions->new(
+		schema				=>	$self->schema,
+		name				=>	$self->name,
+		test_genes			=>	$valid_test_genes,
+		background_genes	=>	$valid_background_genes,
+	);
 }
 
 
