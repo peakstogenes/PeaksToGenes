@@ -108,6 +108,8 @@ sub extract_genomic_regions {
 	$genomic_regions_structure =
 	$self->get_peaks($genomic_regions_structure);
 
+	return $genomic_regions_structure;
+
 }
 
 sub get_chunks {
@@ -190,7 +192,6 @@ sub get_peaks {
 	# Iterate through the structure, and extract the information from the
 	# tables
 	foreach my $gene_type (keys %$genomic_regions_structure) {
-#		print join("\n", @{$self->$gene_type}), "\n";
 		foreach my $location (keys
 			%{$genomic_regions_structure->{$gene_type}}) {
 			foreach my $table_type (keys

@@ -32,31 +32,31 @@ use PeaksToGenes::Contrast::GenomicRegions;
 use Data::Dumper;
 
 BEGIN {
-#
-#	# Call the external install_database.pl script to clear the database and
-#	# index files before testing
-#	`$FindBin::Bin/../install_database.pl`;
-#
-#	# Begin by creating PeaksToGenes and PeaksToGenes::Update objects to
-#	# create a genomic index for hg18
+
+	# Call the external install_database.pl script to clear the database and
+	# index files before testing
+	`$FindBin::Bin/../install_database.pl`;
+
+	# Begin by creating PeaksToGenes and PeaksToGenes::Update objects to
+	# create a genomic index for hg18
 	my $peaks_to_genes = PeaksToGenes->new(
 		'genome'	=>	'hg18',
 	);
-#	my $update = PeaksToGenes::Update->new(
-#		'genome'	=>	'hg18',
-#		'schema'	=>	$peaks_to_genes->schema,
-#	);
-#	$update->update;
-#
-#	# Annotate ER binding sites from Carroll et al 2006
-#	my $annotate = PeaksToGenes::Annotate->new(
-#		schema		=>	$peaks_to_genes->schema,
-#		genome		=>	'hg18',
-#		name		=>	'brown_er',
-#		summits		=>	't/ER_binding_neg_log_p_value.bed',
-#	);
-#	can_ok($annotate, 'annotate');
-#	$annotate->annotate;
+	my $update = PeaksToGenes::Update->new(
+		'genome'	=>	'hg18',
+		'schema'	=>	$peaks_to_genes->schema,
+	);
+	$update->update;
+
+	# Annotate ER binding sites from Carroll et al 2006
+	my $annotate = PeaksToGenes::Annotate->new(
+		schema		=>	$peaks_to_genes->schema,
+		genome		=>	'hg18',
+		name		=>	'brown_er',
+		summits		=>	't/ER_binding_neg_log_p_value.bed',
+	);
+	can_ok($annotate, 'annotate');
+	$annotate->annotate;
 
 	# Create a new instance of PeaksToGenes::Contrast::Genes and test the
 	# ability to return the correct Array Refs of gene ID lists, or invalid
@@ -157,7 +157,7 @@ BEGIN {
 
 	# Call the external install_database.pl script to clear the database and
 	# index files after testing
-#	`$FindBin::Bin/../install_database.pl`;
+	`$FindBin::Bin/../install_database.pl`;
 
 }
 
