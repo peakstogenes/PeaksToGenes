@@ -1,6 +1,8 @@
 package PeaksToGenes::Contrast 0.001;
 use Moose;
 use Carp;
+use PeaksToGenes::Contrast::GenomicRegions;
+use PeaksToGenes::Contrast::Stats;
 use Data::Dumper;
 
 =head1 NAME
@@ -66,6 +68,12 @@ has contrast_name	=>	(
 	required	=>	1,
 );
 
+has statistical_tests	=>	(
+	is				=>	'ro',
+	isa				=>	'HashRef[Bool]',
+	required		=>	1,
+);
+
 =head1 SUBROUTINES/METHODS
 
 =head2 test_and_contrast
@@ -122,7 +130,13 @@ sub test_and_contrast {
 	my $genomic_regions_structure =
 	$genomic_regions->extract_genomic_regions;
 
-	# 
+	# Create an instance of PeaksToGenes::Contrast::Stats, which is a
+	# sub-controller type module to determine which statistical tests have
+	# been defined by the user and will be run.
+	my $stats = PeaksToGenes::Contrast::Stats->new(
+		genomic_regions_structure	=>	$genomic_regions_structure,
+		statistical_tests			=>	$self->statistical_tests,
+	);
 }
 
 

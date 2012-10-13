@@ -16,33 +16,12 @@ has test_genes	=>	(
 	required	=>	1,
 );
 
-has test_genes_chunks	=>	(
-	is			=>	'ro',
-	isa			=>	'ArrayRef[ArrayRef[Int]]',
-	required	=>	1,
-	init_arg	=>	undef,
-	default		=>	sub {
-		my $self = shift;
-		return $self->get_chunks(500, $self->test_genes);
-	},
-);
-
 has background_genes	=>	(
 	is					=>	'ro',
 	isa					=>	'ArrayRef[Int]',
 	required			=>	1,
 );
 
-has background_genes_chunks	=>	(
-	is			=>	'ro',
-	isa			=>	'ArrayRef[ArrayRef[Int]]',
-	required	=>	1,
-	init_arg	=>	undef,
-	default		=>	sub {
-		my $self = shift;
-		return $self->get_chunks(500, $self->background_genes);
-	},
-);
 
 has name	=>	(
 	is			=>	'ro',
@@ -97,6 +76,7 @@ has table_dispatch	=>	(
 
 sub extract_genomic_regions {
 	my $self = shift;
+
 
 	# Create a Hash Ref of Hash Refs of Hash Refs of Array Refs to hold the
 	# information extracted from the tables by calling
@@ -199,8 +179,8 @@ sub get_peaks {
 				my $column_accessor = $location . '_' . $table_type;
 				my $table =
 				$self->table_dispatch->{$location}{$table_type};
-				my $chunk_type = $gene_type . '_chunks';
-				foreach my $gene_id_chunk (@{$self->$chunk_type}) {
+				foreach my $gene_id_chunk (@{$self->get_chunks(500,
+					$self->$gene_type)}) {
 					my $result_data =
 					$self->schema->resultset($table)->search_rs(
 						{
@@ -214,8 +194,7 @@ sub get_peaks {
 								(@{$genomic_regions_structure->{$gene_type}{$location}{$table_type}},
 									$result_row->$column_accessor
 								);
-							} elsif ( $table_type eq 'peaks_information' )
-							{
+							} else {
 								# Call the parse_peaks_information
 								# subroutine to extract the peak score from
 								# the string
