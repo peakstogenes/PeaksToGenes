@@ -157,6 +157,9 @@ sub fetch_tables {
 	# Ref
 	my $file_strings = $self->file_names;
 
+	# Write the chromosome sizes to file 
+	my $chromosome_sizes_fh = $self->write_chromosome_sizes;
+
 	# Use the get_gene_body_coordinates subroutine to interact with the
 	# UCSC MySQL server and return the gene coordinates in the form of a
 	# Hash Ref
@@ -197,7 +200,7 @@ sub fetch_tables {
 	# Make a call to the print_genomic_coordinates subroutine to print the
 	# coordinates to BED-format files in the static directory
 	$self->print_genomic_coordinates($file_strings, $genomic_coordinates);
-	return $file_strings;
+	return ($file_strings, $chromosome_sizes_fh);
 }
 
 sub file_names {
@@ -239,6 +242,34 @@ sub file_names {
 			"Kb_Downstream.bed");
 	}
 	return $file_strings;
+}
+
+sub write_chromosome_sizes {
+	my $self = shift;
+
+	my $directory = "$FindBin::Bin/../static/" . $self->genome .
+	"_Index/chromosome_sizes_file";
+	# Make a directory to store the chromosome sizes file if it does not
+	# already exist
+	if (! -d $directory ) {
+		`mkdir -p $directory`;
+	}
+
+	# Convert the chromosome sizes information into an Array Ref for easier
+	# printing
+	my $chromsome_sizes_array = [];
+	foreach my $chr (keys %{$self->chromosome_sizes}) {
+		push(@$chromsome_sizes_array, join("\t", $chr,
+				$self->chromosome_sizes->{$chr})
+		);
+	}
+
+	# Write the chromosome sizes to file
+	my $fh = $directory . '/' . $self->genome . '_chromosome_sizes_file';
+	open my $chr_size_file, ">", $fh or croak "Could not write to chromosome sizes file $fh. Please check that you have proper permissions for this location $!\n";
+	print $chr_size_file join("\n", @$chromsome_sizes_array);
+
+	return $fh;
 }
 
 sub get_gene_body_coordinates {
