@@ -9,6 +9,12 @@ DROP TABLE IF EXISTS gene_body_number_of_peaks;
 DROP TABLE IF EXISTS available_genomes;
 DROP TABLE IF EXISTS transcripts;
 DROP TABLE IF EXISTS experiments;
+DROP TABLE IF EXISTS chromosome_sizes;
+CREATE TABLE chromosome_sizes (
+	id INTEGER PRIMARY KEY AUTOINCREMENT,
+	genome_id INTEGER NOT NULL REFERENCES available_genomes(id) ON UPDATE CASCADE,
+	chromosome_sizes_file TEXT NOT NULL UNIQUE
+);
 CREATE TABLE transcripts (
 	id INTEGER PRIMARY KEY AUTOINCREMENT,
 	genome_id INTEGER NOT NULL REFERENCES available_genomes(id) ON UPDATE CASCADE,

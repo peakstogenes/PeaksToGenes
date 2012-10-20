@@ -2186,6 +2186,21 @@ __PACKAGE__->add_unique_constraint(
 
 =head1 RELATIONS
 
+=head2 chromosome_sizes
+
+Type: has_many
+
+Related object: L<PeaksToGenes::Schema::Result::ChromosomeSize>
+
+=cut
+
+__PACKAGE__->has_many(
+  "chromosome_sizes",
+  "PeaksToGenes::Schema::Result::ChromosomeSize",
+  { "foreign.genome_id" => "self.id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
 =head2 downstream_annotations
 
 Type: has_many
@@ -2337,8 +2352,8 @@ __PACKAGE__->has_many(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07025 @ 2012-10-05 21:56:09
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:kFKBFGx+0P5SOn01LePS+g
+# Created by DBIx::Class::Schema::Loader v0.07025 @ 2012-10-20 13:28:41
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:b6ofi0Wh3RwkwmaVlu4jng
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

@@ -1,3 +1,4 @@
 *.swp
 static/*
 db/peakstogenes.db
+t/install_mm9.pl
