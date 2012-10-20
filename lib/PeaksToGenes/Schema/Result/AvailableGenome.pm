@@ -2197,7 +2197,7 @@ Related object: L<PeaksToGenes::Schema::Result::ChromosomeSize>
 __PACKAGE__->has_many(
   "chromosome_sizes",
   "PeaksToGenes::Schema::Result::ChromosomeSize",
-  { "foreign.chromosome_sizes_file" => "self.id" },
+  { "foreign.genome_id" => "self.id" },
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
@@ -2352,8 +2352,8 @@ __PACKAGE__->has_many(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07025 @ 2012-10-20 11:50:08
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:zVvdW77y76fzsCttMXBfwQ
+# Created by DBIx::Class::Schema::Loader v0.07025 @ 2012-10-20 13:28:41
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:b6ofi0Wh3RwkwmaVlu4jng
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

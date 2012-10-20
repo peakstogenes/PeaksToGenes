@@ -12,7 +12,8 @@ DROP TABLE IF EXISTS experiments;
 DROP TABLE IF EXISTS chromosome_sizes;
 CREATE TABLE chromosome_sizes (
 	id INTEGER PRIMARY KEY AUTOINCREMENT,
-	chromosome_sizes_file TEXT NOT NULL REFERENCES available_genomes(id) ON UPDATE CASCADE
+	genome_id INTEGER NOT NULL REFERENCES available_genomes(id) ON UPDATE CASCADE,
+	chromosome_sizes_file TEXT NOT NULL UNIQUE
 );
 CREATE TABLE transcripts (
 	id INTEGER PRIMARY KEY AUTOINCREMENT,

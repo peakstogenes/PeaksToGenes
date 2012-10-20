@@ -64,29 +64,41 @@ sub update {
 	my $ucsc = PeaksToGenes::Update::UCSC->new(
 		genome	=>	$self->genome,
 	);
+
 	# Run the PeaksToGenes::Update::UCSC fetch_tables subroutine
 	# to download the minimal base tables for the user-defined
 	# genome
-	my $base_files = $ucsc->fetch_tables;
+	my ($base_files, $chromosome_sizes_file) = $ucsc->fetch_tables;
+
 	# Run the create_statement subroutine to iterate through the base files
 	# and extract the relative location of the index files using a compiled
-	# regular expression
-	my $available_genomes_insert = $self->create_statement($base_files);
+	# regular expression. Add to the insert statement the
+	# chromosome_sizes_file so that the many_to_many relationship between
+	# AvailableGenome and ChromosomeSize can be used to update both tables
+	# in the same command.
+	my $available_genomes_insert = $self->create_statement($base_files,
+		$chromosome_sizes_file);
+
 	# Make a call to the update_database subroutine to insert the lines
 	# into the database
 	my ($genome_id, $promoter_file) =
 	$self->update_database($available_genomes_insert);
+
 	# Make a call to the update_transcripts subroutine to extract the
 	# transcript accessions and insert them into the transcripts table
 	$self->update_transcripts($genome_id, $promoter_file);
 }
 
 sub create_statement {
-	my ($self, $base_files) = @_;
+	my ($self, $base_files, $chromosome_sizes_file) = @_;
 	# Create a Hash Ref to insert into the available_genomes table
 	my $available_genomes_insert = [
 		{
 			genome	=>	$self->genome,
+			chromosome_sizes	=>	[
+				genome_id				=>	$self->genome,
+				chromosome_sizes_file	=>	$chromosome_sizes_file,
+			],
 		}
 	];
 	# Create a stored regular expression to extract the base table names
