@@ -3,7 +3,6 @@ use Moose;
 use Carp;
 use FindBin;
 use lib "$FindBin::Bin/../lib";
-use PeaksToGenes::Update::UCSC;
 use Data::Dumper;
 
 =head1 NAME
@@ -107,13 +106,9 @@ the genome defined by the user.
 sub check_bed_file {
 	my $self = shift;
 
-	# Create an instance of PeaksToGenes::Update::UCSC
-	my $ucsc = PeaksToGenes::Update::UCSC->new(
-		genome	=>	$self->genome,
-	);
-
-	# Get the chromosome sizes from the UCSC MySQL Tables
-	my $chromosome_sizes = $ucsc->chromosome_sizes;
+	# Fetch the chromosome sizes from the database by calling
+	# PeaksToGenes::Annotate::BedTools::chromosome_sizes
+	my $chromosome_sizes = $self->chromosome_sizes;
 
 	# Pre-declare a line number to return useful errors to the user
 	my $line_number = 1;
@@ -200,6 +195,41 @@ sub check_bed_file {
 
 		$line_number++;
 	}
+}
+
+sub chromosome_sizes {
+	my $self = shift;
+
+	# Fetch the genome_id for the user-defined genome
+	my $genome_id = $self->schema->resultset('AvailableGenome')->find(
+		{
+			genome	=>	$self->genome
+		}
+	)->id;
+
+	# Using the genome_id, fetch the file string for the chromosome sizes
+	# file corresponding to the user-defined genome
+	my $chromosome_sizes_fh =
+	$self->schema->resultset('ChromosomeSize')->find(
+		{
+			genome_id	=>	$genome_id,
+		}
+	)->chromosome_sizes_file;
+
+	# Pre-declare a Hash Ref to store the chromosome sizes information
+	my $chromosome_sizes = {};
+
+	# Open the chromosome sizes file, iterate through the lines, parse the
+	# data and store it in the Hash Ref
+	open my $chromosome_sizes_file, "<", $chromosome_sizes_fh or croak 
+	"Could not read from the chromosome sizes file: $chromosome_sizes_fh $!\n";
+	while (<$chromosome_sizes_file>) {
+		my $line = $_;
+		chomp($line);
+		my ($chr, $length) = split(/\t/, $line);
+		$chromosome_sizes->{$chr} = $length;
+	}
+	return $chromosome_sizes;
 }
 
 sub align_peaks {
