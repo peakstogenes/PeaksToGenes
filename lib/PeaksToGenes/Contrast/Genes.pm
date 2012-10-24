@@ -86,6 +86,13 @@ sub get_genes {
 		my ($valid_background_ids, $invalid_background_accessions) =
 		$self->extract_genes($self->background_genes_fh,
 			$all_genes_result_set);
+
+		# Remove genes from the background list which appear in the test
+		# list using PeaksToGenes::Contrast::Genes::unique_background
+		$valid_background_ids = $self->unique_background($valid_test_ids,
+			$valid_background_ids
+		);
+
 		return ($valid_test_ids, $invalid_test_accessions,
 			$valid_background_ids, $invalid_background_accessions);
 	} else {
@@ -176,6 +183,36 @@ sub default_background {
 		}
 	}
 	return $valid_background_ids;
+}
+
+sub unique_background {
+	my ($self, $valid_test_ids, $valid_background_ids) = @_;
+
+	# Create a Hash Ref of the valid test ids
+	my $hash_of_valid_test_ids = {};
+	foreach my $valid_test_id (@$valid_test_ids) {
+		$hash_of_valid_test_ids->{$valid_test_id} = 1;
+	}
+
+	# Pre-declare Array Refs for the unique and non-unique background IDs
+	my $unique_background_ids = [];
+	my $non_unique_backgrond_ids = [];
+
+	# Iterate through the valid background ids and test whether the ID
+	# found is unique or not, storing it in the appropriate Array Ref
+	foreach my $valid_background_id (@$valid_background_ids) {
+		if ( $hash_of_valid_test_ids->{$valid_background_id} ) {
+			push (@$non_unique_backgrond_ids, $valid_background_id);
+		} else {
+			push (@$unique_background_ids, $valid_background_id);
+		}
+	}
+
+	print "\nThe following accessions in  your background list were ",
+	"masked from analysis:\n\t", join("\n\t", @$non_unique_backgrond_ids),
+	"\n\n";
+
+	return $unique_background_ids;
 }
 
 =head1 AUTHOR
