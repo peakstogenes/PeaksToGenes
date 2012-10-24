@@ -193,7 +193,8 @@ sub get_peaks {
 								push
 								(@{$genomic_regions_structure->{$gene_type}{$location}{$table_type}},
 									$result_row->$column_accessor
-								);
+								) if ( $result_row->$column_accessor =~
+									/\d/);
 							} else {
 								# Call the parse_peaks_information
 								# subroutine to extract the peak score from
@@ -237,13 +238,17 @@ sub parse_peaks_information {
 	if ( $string =~ /\s\/\/\/\s/ ) {
 		my @string_fields = split(/\s\/\/\/\s/, $string);
 		foreach my $string_field (@string_fields) {
-			my ($chr, $start, $stop, $name, $score) = split(/:/,
-				$string_field);
-			push(@$scores, $score);
+			if ( $string_field && $string_field =~ /:/ ) {
+				my ($chr, $start, $stop, $name, $score) = split(/:/,
+					$string_field);
+				push(@$scores, $score) if ($score =~ /\d/);
+			}
 		}
 	} else {
-		my ($chr, $start, $stop, $name, $score) = split(/:/, $string);
-		push(@$scores, $score);
+		if ( $string && $string =~ /\d/ ) {
+			my ($chr, $start, $stop, $name, $score) = split(/:/, $string);
+			push(@$scores, $score) if ($score =~ /\d/);
+		}
 	}
 	return $scores;
 }
