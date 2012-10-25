@@ -208,8 +208,20 @@ sub unique_background {
 		}
 	}
 
+	# Convert the IDs back to accessions
+	my $non_unique_accessions = [];
+	foreach my $non_unique_backgrond_id ( @$non_unique_backgrond_ids ) {
+		push (@$non_unique_accessions,
+			$self->schema->resultset('Transcript')->find(
+				{
+					id	=>	$non_unique_backgrond_id
+				}
+			)->transcript
+		);
+	}
+
 	print "\nThe following accessions in  your background list were ",
-	"masked from analysis:\n\t", join("\n\t", @$non_unique_backgrond_ids),
+	"masked from analysis:\n\t", join("\n\t", @$non_unique_accessions),
 	"\n\n";
 
 	return $unique_background_ids;

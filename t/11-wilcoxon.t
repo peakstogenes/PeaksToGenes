@@ -80,6 +80,7 @@ BEGIN {
 		name				=>	'brown_er',
 		test_genes			=>	$valid_test_ids,
 		background_genes	=>	$valid_background_ids,
+		processors			=>	8,
 	);
 	isa_ok($genomic_regions, 'PeaksToGenes::Contrast::GenomicRegions');
 	can_ok($genomic_regions, 'extract_genomic_regions');

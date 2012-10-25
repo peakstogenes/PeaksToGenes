@@ -74,6 +74,15 @@ has statistical_tests	=>	(
 	required		=>	1,
 );
 
+has processors	=>	(
+	is			=>	'ro',
+	isa			=>	'Int',
+	default		=>	sub {
+		my $self = shift;
+		return 1;
+	}
+);
+
 =head1 SUBROUTINES/METHODS
 
 =head2 test_and_contrast
