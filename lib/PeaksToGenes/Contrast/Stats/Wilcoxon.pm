@@ -2,7 +2,6 @@ package PeaksToGenes::Contrast::Stats::Wilcoxon 0.001;
 
 use Moose;
 use Carp;
-use PeaksToGenes::Contrast::Stats::StandardNormalTable;
 use Parallel::ForkManager;
 use Data::Dumper;
 
