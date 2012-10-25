@@ -76,6 +76,7 @@ BEGIN {
 		schema		=>	$peaks_to_genes->schema,
 		summits		=>	"$FindBin::Bin/temp.bed",
 		index_files	=>	$genome_info,
+		processors	=>	8,
 	);
 	my $indexed_peaks = $bedtools->annotate_peaks;
 	isa_ok($indexed_peaks, 'HASH');
@@ -96,6 +97,7 @@ BEGIN {
 		name			=>	'testing1',
 		ordered_index	=>	$genome_info,
 		genome			=>	'hg19',
+		processors		=>	8,
 	);
 	isa_ok($test_database, 'PeaksToGenes::Annotate::Database');
 	can_ok($test_database, 'extract_genome_id');
