@@ -3,6 +3,7 @@ use Moose;
 use Carp;
 use FindBin;
 use lib "$FindBin::Bin/../lib";
+use Parallel::ForkManager;
 use Data::Dumper;
 
 =head1 NAME
@@ -67,6 +68,12 @@ has base_regex	=>	(
 		$self->genome;
 		return $base_regex;
 	}
+);
+
+has processors	=>	(
+	is			=>	'ro',
+	isa			=>	'Int',
+	default		=>	1,
 );
 
 =head2 annotate_peaks
@@ -245,38 +252,24 @@ sub align_peaks {
 	# Pre-declare a Hash Ref to hold the intersected peaks information
 	my $indexed_peaks = {};
 
-	# Iterate through the ordered index, and intersect the Summits file
-	# with the index file. Extract the information from any intersections
-	# that occur and store them in the indexed_peaks Hash Ref.
-	foreach my $index_file (@{$self->index_files}) {
+	# Create an instance of Parallel::ForkManager with the number of
+	# threads allowed based on the number of processors defined by the user
+	my $pm = Parallel::ForkManager->new($self->processors);
 
-		# Pre-declare a string to hold the genomic location of each index file
-		my $location = '';
-		# Match the location from the file string
-		if ($index_file =~ qr/($base_regex)(.+?)\.bed$/ ) {
-			$location = $2;
-		}
+	# Define a subroutine to be run at the end of each thread, so that the
+	# information is correctly stored in the indexed_peaks Hash Ref
+	$pm->run_on_finish(
+		sub {
+			my ($pid, $exit_code, $ident, $exit_signal, $core_dump,
+				$data_structure) = @_;
 
-		# If the location string has been found, intersect the location file with the
-		# summits file
-		if ($location) {
-			# Store the string corresponding to either the number of peaks,
-			# peaks information, or the interval size for annotation into a
-			# scalar string so it is easier to store in the Hash Ref.
-			my $peak_number = $location . '_Number_of_Peaks';
-			my $peak_info = $location . '_Peaks_Information';
-			my $interval_size = $location . '_Interval_Size';
-
-			# Make a back ticks call to intersectBed with the -wo option so
-			# that the original entry for both the experimental intervals
-			# and the genomic intervals are returned for each instance
-			# where the experimental interval overlaps a genomic interval.
-			# The intersected interval lines will be stored in an array.
-			my @intersected_peaks = 
-			`intersectBed -wo -a $summits_file -b $index_file`;
+			my $peak_number = $data_structure->{peak_number};
+			my $peak_info = $data_structure->{peak_info};
+			my $interval_size = $data_structure->{interval_size};
 
 			# Parse the information, and store it in the Hash Ref
-			foreach my $intersected_peak (@intersected_peaks) {
+			foreach my $intersected_peak
+			(@{$data_structure->{intersected_peaks}}) {
 				chomp ($intersected_peak);
 
 				# Split the fields by the tab-delimiter. Because of the
@@ -324,11 +317,59 @@ sub align_peaks {
 					= ($index_stop - $index_start + 1);
 				}
 			}
+		}
+	);
+
+
+	# Iterate through the ordered index, and intersect the Summits file
+	# with the index file. Extract the information from any intersections
+	# that occur and store them in the indexed_peaks Hash Ref.
+	foreach my $index_file (@{$self->index_files}) {
+
+		$pm->start and next;
+
+		# Pre-declare a string to hold the genomic location of each index file
+		my $location = '';
+		# Match the location from the file string
+		if ($index_file =~ qr/($base_regex)(.+?)\.bed$/ ) {
+			$location = $2;
+		}
+
+		# If the location string has been found, intersect the location file with the
+		# summits file
+		if ($location) {
+			# Store the string corresponding to either the number of peaks,
+			# peaks information, or the interval size for annotation into a
+			# scalar string so it is easier to store in the Hash Ref.
+			my $peak_number = $location . '_Number_of_Peaks';
+			my $peak_info = $location . '_Peaks_Information';
+			my $interval_size = $location . '_Interval_Size';
+
+			# Make a back ticks call to intersectBed with the -wo option so
+			# that the original entry for both the experimental intervals
+			# and the genomic intervals are returned for each instance
+			# where the experimental interval overlaps a genomic interval.
+			# The intersected interval lines will be stored in an array.
+			my @intersected_peaks = 
+			`intersectBed -wo -a $summits_file -b $index_file`;
+
+			$pm->finish(0, 
+				{
+					intersected_peaks	=>	\@intersected_peaks,
+					peak_number			=>	$peak_number,
+					peak_info			=>	$peak_info,
+					interval_size		=>	$interval_size,
+				}
+			);
+
+		
 		} else {
 			croak "There was a problem determining the location of the " .
 			"index file relative to transcription start site";
 		}
 	}
+
+	$pm->wait_all_children;
 
 	# Return the Hash Ref of experimental intervals annotated based on
 	# location relative to RefSeq transcripts to the main subroutine.
