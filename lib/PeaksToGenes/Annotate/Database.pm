@@ -1,6 +1,5 @@
 package PeaksToGenes::Annotate::Database 0.001;
 use Moose;
-use Parallel::ForkManager;
 use Carp;
 
 =head1 NAME
@@ -70,12 +69,6 @@ has base_regex	=>	(
 	}
 );
 
-has processors	=>	(
-	is			=>	'ro',
-	isa			=>	'Int',
-	default		=>	1,
-);
-
 =head2 parse_and_store
 
 This subroutine is the main function called by the PeaksToGenes::Annotate
@@ -121,42 +114,8 @@ sub parse_row_items {
 	# Copy the base regular expression into a scalar string
 	my $base_regex = $self->base_regex;
 
-	# Create an instance of Parallel::ForkManager with the number of
-	# threads limited to the number of processors specified by the user
-	my $pm = Parallel::ForkManager->new($self->processors);
-
-	# Define a subroutine to be executed at the end of each thread so that
-	# the insert statement is properly stored 
-	$pm->run_on_finish(
-		sub {
-			my ($pid, $exit_code, $ident, $exit_signal, $core_dump,
-				$data_structure) = @_;
-
-			# Add the insert lines to the insert statement
-			push(@{$insert->{upstream_annotations}},
-				$data_structure->{upstream_annotations});
-			push(@{$insert->{downstream_annotations}},
-				$data_structure->{downstream_annotations});
-			push(@{$insert->{transcript_annotations}},
-				$data_structure->{transcript_annotations});
-			push(@{$insert->{gene_body_annotations}},
-				$data_structure->{gene_body_annotations});
-			push(@{$insert->{gene_body_numbers_of_peaks}},
-				$data_structure->{gene_body_numbers_of_peaks});
-			push(@{$insert->{upstream_numbers_of_peaks}},
-				$data_structure->{upstream_numbers_of_peaks});
-			push(@{$insert->{downstream_numbers_of_peaks}},
-				$data_structure->{downstream_numbers_of_peaks});
-			push(@{$insert->{transcript_numbers_of_peaks}},
-				$data_structure->{transcript_numbers_of_peaks});
-		}
-	);
-
 	# Iterate through the genes keys in the indexed peaks structure
 	foreach my $accession ( keys %{$self->indexed_peaks} ) {
-
-		# Start a new thread if there is one available
-		$pm->start and next;
 
 		# Iterate through the ordered index and extract the required information
 		# from the indexed_peaks Hash Ref
@@ -300,29 +259,24 @@ sub parse_row_items {
 
 		}
 
-		$pm->finish(0, 
-			{
-				transcript_numbers_of_peaks	=>
-					$transcript_number_of_peaks_insert_line,
-				downstream_numbers_of_peaks	=>
-					$downstream_number_of_peaks_insert_line,
-				upstream_numbers_of_peaks	=>
-					$upstream_number_of_peaks_insert_line,
-				gene_body_numbers_of_peaks	=>
-					$gene_body_number_of_peaks_insert_line,
-				gene_body_annotations		=>
-					$gene_body_annotation_insert_line,
-				transcript_annotations		=>
-					$transcript_annotation_insert_line,
-				downstream_annotations		=>
-					$downstream_annotation_insert_line,
-				upstream_annotations		=>
-					$upstream_annotation_insert_line,
-			}
-		);
-	}
+		push(@{$insert->{upstream_annotations}},
+			$upstream_annotation_insert_line);
+		push(@{$insert->{downstream_annotations}},
+			$downstream_annotation_insert_line);
+		push(@{$insert->{transcript_annotations}},
+			$transcript_annotation_insert_line);
+		push(@{$insert->{gene_body_annotations}},
+			$gene_body_annotation_insert_line);
+		push(@{$insert->{gene_body_numbers_of_peaks}},
+			$gene_body_number_of_peaks_insert_line);
+		push(@{$insert->{upstream_numbers_of_peaks}},
+			$upstream_number_of_peaks_insert_line);
+		push(@{$insert->{downstream_numbers_of_peaks}},
+			$downstream_number_of_peaks_insert_line);
+		push(@{$insert->{transcript_numbers_of_peaks}},
+			$transcript_number_of_peaks_insert_line);
 
-	$pm->wait_all_children;
+	}
 
 	# Return the insert statement to the main subroutine
 	return $insert;
