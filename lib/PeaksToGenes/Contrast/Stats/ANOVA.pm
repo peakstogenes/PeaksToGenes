@@ -66,25 +66,23 @@ sub fisher_anova {
 				);
 
 				$anova->anova(
-					independent		=>	1,
-					parametric		=>	1,
-					alpha			=>	0.05,
-					ordinal			=>	0,
-					precision_p 	=>	10, 
-					precision_s 	=>	10,
-					mse				=>	1, 
-					eta_squared		=>	1, 
-					omega_squared	=> 	1,
+					independent	=>	1,
+					parametric	=>	1,
+					alpha		=>	0.05,
+					ordinal		=>	0,
 				);
 
 				$pm->finish(0, 
 					{
 						genomic_region		=>	$genomic_region,
 						type				=>	$type,
-						anova				=>	{
-							p_value			=>	$anova->{'p_value'},
-							f_value			=>	$anova->{'f_value'},
-						}
+						anova				=>	$anova->string(
+							precision_p 	=>	10, 
+							precision_s 	=>	10,
+							mse				=>	1, 
+							eta_squared		=>	1, 
+							omega_squared	=> 	1,
+						),
 					}
 				);
 			}
