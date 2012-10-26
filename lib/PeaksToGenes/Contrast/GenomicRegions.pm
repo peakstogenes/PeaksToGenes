@@ -270,7 +270,7 @@ sub get_peaks {
 					} else {
 						foreach my $result (@result_column) {
 							push(@$data_array,
-								$self->parse_peaks_information($result)) if
+								@{$self->parse_peaks_information($result)}) if
 							$result;
 						}
 					}
