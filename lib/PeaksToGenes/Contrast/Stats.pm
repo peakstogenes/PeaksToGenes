@@ -2,9 +2,12 @@ package PeaksToGenes::Contrast::Stats 0.001;
 
 use Moose;
 use Carp;
+use FindBin;
+use lib "$FindBin::Bin/../lib";
 use PeaksToGenes::Contrast::Stats::RankOrder;
 use PeaksToGenes::Contrast::Stats::Wilcoxon;
 use PeaksToGenes::Contrast::Stats::PointBiserialCorrelation;
+use PeaksToGenes::Contrast::Stats::ANOVA;
 use Data::Dumper;
  
 has genomic_regions_structure	=>	(
@@ -76,6 +79,18 @@ sub run_statistical_tests {
 		);
 		$test_results->{'point_biserial'} =
 		$point_biserial->correlation_coefficient;
+	}
+
+	# If the ANOVA test has been flagged for testing, use the
+	# PeaksToGenes::Contrast::Stats::ANOVA::fisher_anova subroutine to run
+	# the test
+	if ( $self->statistical_tests->{anova} ) {
+		my $anova = PeaksToGenes::Contrast::Stats::ANOVA->new(
+			genomic_regions_structure	=>
+			$self->genomic_regions_structure,
+			processors					=>	$self->processors,
+		);
+		$test_results->{'anova'} = $anova->fisher_anova;
 	}
 
 

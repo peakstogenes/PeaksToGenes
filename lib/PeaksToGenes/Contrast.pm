@@ -1,8 +1,11 @@
 package PeaksToGenes::Contrast 0.001;
 use Moose;
 use Carp;
+use FindBin;
+use lib "$FindBin::Bin/../lib";
 use PeaksToGenes::Contrast::GenomicRegions;
 use PeaksToGenes::Contrast::Stats;
+use PeaksToGenes::Contrast::ParseStats;
 use Data::Dumper;
 
 =head1 NAME
@@ -77,10 +80,7 @@ has statistical_tests	=>	(
 has processors	=>	(
 	is			=>	'ro',
 	isa			=>	'Int',
-	default		=>	sub {
-		my $self = shift;
-		return 1;
-	}
+	default		=>	1,
 );
 
 =head1 SUBROUTINES/METHODS
@@ -122,7 +122,7 @@ sub test_and_contrast {
 		background_genes_fh	=>	$self->background_genes_fh,
 	);
 	my ($valid_test_genes, $invalid_test_genes, $valid_background_genes,
-		$invalid_background_genes) = $genes->extract_genes;
+		$invalid_background_genes) = $genes->get_genes;
 
 	# Create an instance of PeaksToGenes::Contrast::GenomicRegions and run
 	# PeaksToGenes::Contrast::GenomicRegions::extract_genomic_regions to
@@ -135,17 +135,47 @@ sub test_and_contrast {
 		name				=>	$self->name,
 		test_genes			=>	$valid_test_genes,
 		background_genes	=>	$valid_background_genes,
+		genome				=>	$self->genome,
+		processors			=>	$self->processors,
 	);
 	my $genomic_regions_structure =
 	$genomic_regions->extract_genomic_regions;
 
-	# Create an instance of PeaksToGenes::Contrast::Stats, which is a
-	# sub-controller type module to determine which statistical tests have
-	# been defined by the user and will be run.
-	my $stats = PeaksToGenes::Contrast::Stats->new(
-		genomic_regions_structure	=>	$genomic_regions_structure,
-		statistical_tests			=>	$self->statistical_tests,
-	);
+	# Use the PeaksToGenes::Contrast::GenomicRegions::get_ordered_index
+	# subroutine to extract an ordered Array Ref of genomic locations
+	my $genomic_locations = $genomic_regions->get_ordered_index;
+
+	# Pre-declare a Hash Ref to store the parsed results of any statistical
+	# tests and of the aggregate tables
+	my $parsed_array_refs = {};
+
+	# If any statistical tests have been defined create an instance of
+	# PeaksToGenes::Contrast::Stats, which is a sub-controller type module
+	# to determine which statistical tests have been defined by the user
+	# and will be run.
+	if ( $self->statistical_tests ) {
+		my $stats = PeaksToGenes::Contrast::Stats->new(
+			genomic_regions_structure	=>	$genomic_regions_structure,
+			statistical_tests			=>	$self->statistical_tests,
+			processors					=>	$self->processors,
+		);
+
+		my $statistical_results = $stats->run_statistical_tests;
+
+		# Create an instance of PeaksToGenes::Contrast::ParseStats in order
+		# to parse the results of the statistical tests using the
+		# PeaksToGenes::Contrast::ParseStats::parse_stats subroutine
+		my $parse_stats = PeaksToGenes::Contrast::ParseStats->new(
+			stats_results	=>	$statistical_results,
+			genomic_index	=>	$genomic_locations,
+		);
+
+		$parsed_array_refs = $parse_stats->parse_stats;
+
+	}
+
+	print Dumper $parsed_array_refs;
+
 }
 
 

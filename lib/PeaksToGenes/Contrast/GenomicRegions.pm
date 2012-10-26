@@ -2,6 +2,7 @@ package PeaksToGenes::Contrast::GenomicRegions 0.001;
 
 use Moose;
 use Carp;
+use PeaksToGenes::Annotate::FileStructure;
 use Parallel::ForkManager;
 use Data::Dumper;
 
@@ -74,13 +75,30 @@ has table_dispatch	=>	(
 	},
 );
 
+has base_regex	=>	(
+	is			=>	'ro',
+	isa			=>	'Str',
+	required	=>	1,
+	default		=>	sub {
+		my $self = shift;
+		# Create a regular expression string to be used to match the
+		# location of each index file.
+		my $base_regex = "\.\.\/" . $self->genome . "_Index\/" .
+		$self->genome;
+		return $base_regex;
+	}
+);
+
+has genome	=>	(
+	is			=>	'ro',
+	isa			=>	'Str',
+	required	=>	1,
+);
+
 has processors	=>	(
 	is			=>	'ro',
 	isa			=>	'Int',
-	default		=>	sub {
-		my $self = shift;
-		return 1;
-	}
+	default		=>	1,
 );
 
 sub extract_genomic_regions {
@@ -350,6 +368,55 @@ sub parse_peaks_information {
 		}
 	}
 	return $scores;
+}
+
+sub get_ordered_index {
+	my $self = shift;
+
+	# Create an instance of PeaksToGenes::Annotate::FileStructure in order
+	# to use the
+	# PeaksToGenes::Annotate::FileStructure::get_index_file_names
+	# subroutine to return an Array Ref of file names. These file names
+	# will be used to produce the column names of the structures for the
+	# statistics results
+	my $file_structure = PeaksToGenes::Annotate::FileStructure->new(
+		schema	=>	$self->schema,
+		genome	=>	$self->genome,
+	);
+	my $available_genome_search_result = $file_structure->test_genome;
+	my $genomic_index =
+	$file_structure->get_index_file_names(
+		$available_genome_search_result);
+
+	# Use the PeakToGenes::Contrast::GenomicRegions::parse_file_strings
+	# subroutine to extract the locations from the file strings
+	my $genomic_locations = $self->parse_file_strings($genomic_index);
+
+	return $genomic_locations;
+
+}
+
+sub parse_file_strings {
+	my ($self, $genomic_index) = @_;
+
+	# Pre-define an Array Ref to store the parse locations
+	my $genomic_locations = [];
+
+	# Copy the base regular expression into a scalar
+	my $base_regex = $self->base_regex;
+
+	# Iterate through the file string, extracting the base and adding it to
+	# the Array Ref of genomic locations
+	foreach my $index_file (@$genomic_index) {
+		if ($index_file =~ qr/($base_regex)(.+?)\.bed$/ ) {
+			push(@$genomic_locations, $2);
+		} else {
+			croak "There was a problem using regular expressions to extract the location from the file $index_file\n\n";
+		}
+	}
+
+	return $genomic_locations;
+
 }
 
 1;
