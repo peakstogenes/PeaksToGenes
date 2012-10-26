@@ -46,6 +46,7 @@ BEGIN {
 	my $update = PeaksToGenes::Update->new(
 		'genome'	=>	'hg18',
 		'schema'	=>	$peaks_to_genes->schema,
+		processors					=>	8,
 	);
 	$update->update;
 
@@ -55,6 +56,7 @@ BEGIN {
 		genome		=>	'hg18',
 		name		=>	'brown_er',
 		summits		=>	't/ER_binding_neg_log_p_value.bed',
+		processors					=>	8,
 	);
 	can_ok($annotate, 'annotate');
 	$annotate->annotate;
@@ -67,6 +69,7 @@ BEGIN {
 		genome					=>	'hg18',
 		test_genes_fh			=>	't/0_to_12_Gene_List.txt',
 		background_genes_fh		=>	't/0_to_3_Gene_List.txt',
+		processors				=>	8,
 	);
 	my ($valid_test_ids, $invalid_test_accessions, $valid_background_ids,
 		$invalid_background_accessions) = $genes->get_genes;
@@ -79,6 +82,7 @@ BEGIN {
 		name				=>	'brown_er',
 		test_genes			=>	$valid_test_ids,
 		background_genes	=>	$valid_background_ids,
+		processors			=>	8,
 	);
 	isa_ok($genomic_regions, 'PeaksToGenes::Contrast::GenomicRegions');
 	can_ok($genomic_regions, 'extract_genomic_regions');
