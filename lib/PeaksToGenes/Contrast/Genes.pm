@@ -107,13 +107,16 @@ sub all_genes {
 	my $self = shift;
 
 	# Get the genome ID from the AvailableGenome table
-	my $genome_id = $self->schema->resultset('AvailableGenome')->find(
+	my $genome_id = '';
+	eval { $genome_id = $self->schema->resultset('AvailableGenome')->find(
 		{
 			genome	=>	$self->genome,
 		}
-	)->id or croak "Could not find genome: " . $self->genome . 
+	)->id 
+	};	
+	croak "Could not find genome: " . $self->genome . 
 	". Please check that you have entered a genome, which is valid and " .
-	"annotated in the PeaksToGenes database\n\n";
+	"annotated in the PeaksToGenes database. \n\n$@\n\n" if $@;
 
 	# Fetch the result set from the Transcript table
 	my $all_genes_result_set =
