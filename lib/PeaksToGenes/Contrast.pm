@@ -7,6 +7,7 @@ use PeaksToGenes::Contrast::GenomicRegions;
 use PeaksToGenes::Contrast::Stats;
 use PeaksToGenes::Contrast::ParseStats;
 use PeaksToGenes::Contrast::Aggregate;
+use PeaksToGenes::Contrast::Out;
 use Data::Dumper;
 
 =head1 NAME
@@ -184,7 +185,15 @@ sub test_and_contrast {
 	);
 	$parsed_array_refs->{aggregate} = $aggregate->create_table;
 
-	print Dumper $parsed_array_refs;
+	# Create an instance of PeaksToGenes::Contrast::Out and run the
+	# PeaksToGenes::Contrast::Out::print_tables function, to print the
+	# tables to file based on the user-defined contrast_name
+	my $out = PeaksToGenes::Contrast::Out->new(
+		parsed_array_refs	=>	$parsed_array_refs,
+		contrast_name		=>	$self->contrast_name,
+	);
+
+	$out->print_tables;
 }
 
 =head1 AUTHOR
