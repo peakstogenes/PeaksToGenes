@@ -13,7 +13,7 @@ while (<$file>) {
 
 	my @line_items = split(/\t/, $line);
 
-	if ( @line_items == 6 ) {
+	if ( @line_items >= 6 ) {
 		print join("\t", $line_items[0], $line_items[1], $line_items[2],
 			$line_items[3], $line_items[4]), "\n";
 	}

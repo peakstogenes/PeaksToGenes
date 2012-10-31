@@ -19,8 +19,12 @@ sub list_all_experiments {
 	if ( $self->schema->resultset('Experiment')->get_column('experiment') ) {
 		my @experiments =
 		$self->schema->resultset('Experiment')->get_column('experiment')->all;
-		print "\n\nThe following experiment names are found in the PeaksToGenes database:\n\t",
-		join("\n\t", @experiments), "\n\n";
+		if ( @experiments >= 1 ) {
+			print "\n\nThe following experiment names are found in the PeaksToGenes database:\n\t",
+			join("\n\t", @experiments), "\n\n";
+		} else {
+			print "\n\nThere are no experiments annotated in your PeaksToGenes database\n\n";
+		}
 	} else {
 		croak "\n\nThere are no experiments annotated in your PeaksToGenes database\n\n";
 	}
