@@ -1,12 +1,12 @@
 use utf8;
-package PeaksToGenes::Schema::Result::Transcript;
+package PeaksToGenes::Schema::Result::ChromosomeSize;
 
 # Created by DBIx::Class::Schema::Loader
 # DO NOT MODIFY THE FIRST PART OF THIS FILE
 
 =head1 NAME
 
-PeaksToGenes::Schema::Result::Transcript
+PeaksToGenes::Schema::Result::ChromosomeSize
 
 =cut
 
@@ -15,11 +15,11 @@ use warnings;
 
 use base 'DBIx::Class::Core';
 
-=head1 TABLE: C<transcripts>
+=head1 TABLE: C<chromosome_sizes>
 
 =cut
 
-__PACKAGE__->table("transcripts");
+__PACKAGE__->table("chromosome_sizes");
 
 =head1 ACCESSORS
 
@@ -35,7 +35,7 @@ __PACKAGE__->table("transcripts");
   is_foreign_key: 1
   is_nullable: 0
 
-=head2 transcript
+=head2 chromosome_sizes_file
 
   data_type: 'text'
   is_nullable: 0
@@ -47,7 +47,7 @@ __PACKAGE__->add_columns(
   { data_type => "integer", is_auto_increment => 1, is_nullable => 0 },
   "genome_id",
   { data_type => "integer", is_foreign_key => 1, is_nullable => 0 },
-  "transcript",
+  "chromosome_sizes_file",
   { data_type => "text", is_nullable => 0 },
 );
 
@@ -62,6 +62,20 @@ __PACKAGE__->add_columns(
 =cut
 
 __PACKAGE__->set_primary_key("id");
+
+=head1 UNIQUE CONSTRAINTS
+
+=head2 C<chromosome_sizes_file_unique>
+
+=over 4
+
+=item * L</chromosome_sizes_file>
+
+=back
+
+=cut
+
+__PACKAGE__->add_unique_constraint("chromosome_sizes_file_unique", ["chromosome_sizes_file"]);
 
 =head1 RELATIONS
 
@@ -81,9 +95,10 @@ __PACKAGE__->belongs_to(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07025 @ 2012-10-28 20:01:22
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:W2iu0Uit29awbQKfu0nawg
+# Created by DBIx::Class::Schema::Loader v0.07025 @ 2012-10-20 13:28:41
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:vQ5tA3y22GOGgJ4LbQZieA
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration
+
 1;

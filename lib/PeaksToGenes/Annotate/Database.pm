@@ -155,7 +155,8 @@ sub parse_row_items {
 		}
 
 		# Search for the transcript id from the transcripts table
-		my $transcript_id = $self->extract_transcript_id($accession);
+		my $transcript_id = $self->extract_transcript_id($accession,
+			$genome_id);
 
 		# Pre-define a Hash Ref for each type of insert for this line
 		my $upstream_annotation_insert_line = {
@@ -259,7 +260,6 @@ sub parse_row_items {
 
 		}
 
-		# Add the insert lines to the insert statement
 		push(@{$insert->{upstream_annotations}},
 			$upstream_annotation_insert_line);
 		push(@{$insert->{downstream_annotations}},
@@ -322,13 +322,14 @@ sub extract_genome_id {
 }
 
 sub extract_transcript_id {
-	my ($self, $accession) = @_;
+	my ($self, $accession, $genome_id) = @_;
 
 	# Search for the transcript id from the transcripts table
 	my $transcript_search_result =
 	$self->schema->resultset('Transcript')->find(
 		{
-			transcript	=>	$accession
+			transcript	=>	$accession,
+			genome_id	=>	$genome_id
 		}
 	);
 

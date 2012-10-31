@@ -44,6 +44,8 @@ has name	=>	(
 	is			=>	'ro',
 	isa			=>	'Str',
 	required	=>	1,
+	lazy		=>	1,
+	default		=>	'',
 );
 
 =head1 SUBROUTINES/METHODS

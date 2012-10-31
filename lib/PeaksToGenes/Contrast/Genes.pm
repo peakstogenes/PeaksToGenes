@@ -86,6 +86,13 @@ sub get_genes {
 		my ($valid_background_ids, $invalid_background_accessions) =
 		$self->extract_genes($self->background_genes_fh,
 			$all_genes_result_set);
+
+		# Remove genes from the background list which appear in the test
+		# list using PeaksToGenes::Contrast::Genes::unique_background
+		$valid_background_ids = $self->unique_background($valid_test_ids,
+			$valid_background_ids
+		);
+
 		return ($valid_test_ids, $invalid_test_accessions,
 			$valid_background_ids, $invalid_background_accessions);
 	} else {
@@ -100,13 +107,16 @@ sub all_genes {
 	my $self = shift;
 
 	# Get the genome ID from the AvailableGenome table
-	my $genome_id = $self->schema->resultset('AvailableGenome')->find(
+	my $genome_id = '';
+	eval { $genome_id = $self->schema->resultset('AvailableGenome')->find(
 		{
 			genome	=>	$self->genome,
 		}
-	)->id or croak "Could not find genome: " . $self->genome . 
+	)->id 
+	};	
+	croak "Could not find genome: " . $self->genome . 
 	". Please check that you have entered a genome, which is valid and " .
-	"annotated in the PeaksToGenes database\n\n";
+	"annotated in the PeaksToGenes database. \n\n$@\n\n" if $@;
 
 	# Fetch the result set from the Transcript table
 	my $all_genes_result_set =
@@ -176,6 +186,48 @@ sub default_background {
 		}
 	}
 	return $valid_background_ids;
+}
+
+sub unique_background {
+	my ($self, $valid_test_ids, $valid_background_ids) = @_;
+
+	# Create a Hash Ref of the valid test ids
+	my $hash_of_valid_test_ids = {};
+	foreach my $valid_test_id (@$valid_test_ids) {
+		$hash_of_valid_test_ids->{$valid_test_id} = 1;
+	}
+
+	# Pre-declare Array Refs for the unique and non-unique background IDs
+	my $unique_background_ids = [];
+	my $non_unique_backgrond_ids = [];
+
+	# Iterate through the valid background ids and test whether the ID
+	# found is unique or not, storing it in the appropriate Array Ref
+	foreach my $valid_background_id (@$valid_background_ids) {
+		if ( $hash_of_valid_test_ids->{$valid_background_id} ) {
+			push (@$non_unique_backgrond_ids, $valid_background_id);
+		} else {
+			push (@$unique_background_ids, $valid_background_id);
+		}
+	}
+
+	# Convert the IDs back to accessions
+	my $non_unique_accessions = [];
+	foreach my $non_unique_backgrond_id ( @$non_unique_backgrond_ids ) {
+		push (@$non_unique_accessions,
+			$self->schema->resultset('Transcript')->find(
+				{
+					id	=>	$non_unique_backgrond_id
+				}
+			)->transcript
+		);
+	}
+
+	print "\nThe following accessions in  your background list were ",
+	"masked from analysis:\n\t", join("\n\t", @$non_unique_accessions),
+	"\n\n";
+
+	return $unique_background_ids;
 }
 
 =head1 AUTHOR

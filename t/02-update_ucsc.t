@@ -21,13 +21,18 @@
 use strict;
 use warnings;
 
-use Test::More tests => 320;                      # last test to print
+use Test::More;                      # last test to print
 
 use FindBin;
 use lib "$FindBin::Bin/../lib";
 use PeaksToGenes::Update::UCSC;
 
 BEGIN {
+
+	# Call the external install_database.pl script to clear the database and
+	# index files before testing
+	`$FindBin::Bin/../install_database.pl`;
+
 	# Create a PeaksToGenes::Update::UCSC object
 	my $update = PeaksToGenes::Update::UCSC->new(
 			genome	=>	'hg19',
@@ -46,6 +51,18 @@ BEGIN {
 	};
 	cmp_ok($chromosome_1_size->{chr1}, '==', 249250621, 
 		"Human chromosome 1 is 249250621 bases long");
+	# Test to make sure the
+	# PeaksToGenes::Update::UCSC::write_chromosome_sizes subroutine can be
+	# called and correctly write the coordinates to file
+	can_ok($update, 'write_chromosome_sizes');
+	$update->write_chromosome_sizes;
+	ok( -r
+		"$FindBin::Bin/../static/hg19_Index/chromosome_sizes_file/hg19_chromosome_sizes_file",
+	'PeaksToGenes::Update::UCSC::write_chromosome_sizes wrote the chromosome sizes to file');
+	open my $chr_file, "<",
+		"$FindBin::Bin/../static/hg19_Index/chromosome_sizes_file/hg19_chromosome_sizes_file";
+	my @chromosome_size_lines = <$chr_file>;
+	ok(grep(qr/^chr1\t249250621\n$/, @chromosome_size_lines), 'The coordinates for chromosome 1 are correctly writte to file');
 	# Test to make sure the file_names subroutine can be called
 	can_ok($update, 'file_names');
 	my $file_strings = $update->file_names;
@@ -131,7 +148,7 @@ BEGIN {
 	# Test to make sure that the decile coordinates are calculated
 	# correctly in that the end position is greater than the start position
 	# and that the first 9 deciles are equal in length
-	my $NM_014947_decile_length = 15868;
+	my $NM_014947_decile_length = 15869;
 	my $NM_001204963_decile_length = 29245;
 	for (my $decile = 1; $decile < 10; $decile++) {
 		my $test_decile_lines =
@@ -161,9 +178,14 @@ BEGIN {
 		genome	=>	'hg19',
 	);
 	isa_ok($full_update, 'PeaksToGenes::Update::UCSC');
-	my $base_files = $full_update->fetch_tables;
+	my ($base_files, $chromosome_sizes_fh) = $full_update->fetch_tables;
 	isa_ok($base_files, 'ARRAY', 'The return from the full call to PeaksToGenes::Update::UCSC->fetch_tables returns');
 	cmp_ok(@$base_files, '==', 214, 'There are 214 files listed in the return from the full call to PeaksToGenes::Update::UCSC->fetch_tables');
+	ok(-r $chromosome_sizes_fh, "The file string returned for the chromosome sizes is readable");
+
+	# Call the external install_database.pl script to clear the database and
+	# index files before testing
+	`$FindBin::Bin/../install_database.pl`;
 }
 
-diag( "Testing PeaksToGenes::UCSC::Update, Perl $], $^X" );
+done_testing;

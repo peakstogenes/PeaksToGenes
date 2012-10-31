@@ -51,10 +51,16 @@ has name	=>	(
 	required	=>	1,
 );
 
-has summits	=>	(
+has bed_file	=>	(
 	is			=>	'ro',
 	isa			=>	'Str',
 	required	=>	1,
+);
+
+has processors	=>	(
+	is			=>	'ro',
+	isa			=>	'Int',
+	default		=>	1,
 );
 
 =head2 annotate
@@ -102,7 +108,8 @@ sub annotate {
 		schema		=>	$self->schema,
 		genome		=>	$self->genome,
 		index_files	=>	$genome_info,
-		summits		=>	$self->summits,
+		bed_file	=>	$self->bed_file,
+		processors	=>	$self->processors,
 	);
 	my $indexed_peaks = $bedtools->annotate_peaks;
 
@@ -116,6 +123,7 @@ sub annotate {
 		name			=>	$self->name,
 		ordered_index	=>	$genome_info,
 		genome			=>	$self->genome,
+		processors		=>	$self->processors,
 	);
 	$database->parse_and_store;
 }

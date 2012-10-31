@@ -109,6 +109,7 @@ BEGIN {
 		schema		=>	$peaks_to_genes->schema,
 		summits		=>	"$FindBin::Bin/temp.bed",
 		index_files	=>	$genome_info,
+		processors	=>	8,
 	);
 	isa_ok($temp_bedtools, 'PeaksToGenes::Annotate::BedTools');
 	can_ok($temp_bedtools, 'check_bed_file');
@@ -138,6 +139,7 @@ BEGIN {
 		schema		=>	$peaks_to_genes->schema,
 		summits		=>	"$FindBin::Bin/temp.bed",
 		index_files	=>	$genome_info,
+		processors	=>	8,
 	);
 	my $indexed_peaks = $bedtools->annotate_peaks;
 	isa_ok($indexed_peaks, 'HASH');
