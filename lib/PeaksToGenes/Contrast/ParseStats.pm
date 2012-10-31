@@ -32,9 +32,9 @@ sub parse_stats {
 	# the cognate parsing subroutine to parse the contents of the test
 	# results
 	
-	$parsed_array_refs->{'wilcoxon'} =
-	$self->parse_wilcoxon($self->stats_results->{wilcoxon}) if
-	($self->stats_results->{wilcoxon});
+	$parsed_array_refs->{'kruskal_wallis'} =
+	$self->parse_kruskal_wallis($self->stats_results->{kruskal_wallis}) if
+	($self->stats_results->{kruskal_wallis});
 	
 	$parsed_array_refs->{point_biserial} =
 	$self->parse_point_biserial($self->stats_results->{point_biserial}) if
@@ -55,26 +55,19 @@ sub lowercase_keys {
 	}
 }
 
-sub parse_wilcoxon {
+sub parse_kruskal_wallis {
 	my ($self, $results) = @_;
 
 	# Pre-declare a Hash Ref to hold the Array Ref tables
-	my $wilcoxon_hash_ref_of_tables = {};
+	my $kruskal_wallis_hash_ref_of_tables = {};
 
 	foreach my $table_type (qw(number_of_peaks peaks_information)) {
 
 		# Pre-declare an Array Ref for each row
 		my $header = ['Result Type' ];
-		my $wilcoxon_u = ['Wilcoxon U statistic'];
-		my $p_value = ['Maximum p-value'];
-		my $neg_log_p_value = ['Negative log maximum p-value'];
-		my $correction_factor = ['Correction factor T'];
-		my $corrected_wilcoxon_u = ['T-corrected Wilcoxon U statistuc'];
-		my $corrected_p_value = ['T-corrected maximum p-value'];
-		my $neg_log_corrected_p_value = 
-			['Negative log T-corrected maximum p-value'];
-		my $background_rank_sum = ['Background genes rank sum'];
-		my $test_rank_sum = ['Test genes rank sum'];
+		my $kruskal_wallis_h = ['Kruskal-Wallis H statistic'];
+		my $p_value = ['p-value'];
+		my $neg_log_p_value = ['Negative log p-value'];
 
 
 		foreach my $genomic_location (@{$self->genomic_index}) {
@@ -85,46 +78,34 @@ sub parse_wilcoxon {
 			$temp_genomic_location =~ s/^_//;
 
 			push(@$header, $temp_genomic_location);
-			push(@$wilcoxon_u,
-				$results->{$genomic_location}{$table_type}{wilcoxon_test});
-			push(@$p_value,
-				$results->{$genomic_location}{$table_type}{p_value});
-			push(@$neg_log_p_value,
-				( -1 *
-					log($results->{$genomic_location}{$table_type}{p_value})));
-			push(@$correction_factor,
-				$results->{$genomic_location}{$table_type}{correction_factor});
-			push(@$corrected_wilcoxon_u,
-				$results->{$genomic_location}{$table_type}{corrected_wilcoxon_test});
-			push(@$corrected_p_value,
-				$results->{$genomic_location}{$table_type}{corrected_p_value});
-			push(@$neg_log_corrected_p_value,
-				( -1 *
-					log($results->{$genomic_location}{$table_type}{corrected_p_value})));
-			push(@$background_rank_sum,
-				$results->{$genomic_location}{$table_type}{background_rank_sum});
-			push(@$test_rank_sum,
-				$results->{$genomic_location}{$table_type}{test_rank_sum});
+
+			# Parse the string contained in the Kruskal-Wallis result
+			my ($h_string, $p_string) = split(/, /,
+				$results->{$genomic_location}{$table_type}
+			);
+
+			my ($h_leader, $h_value) = split(/ = /, $h_string);
+			my ($p_leader, $p_val) = split(/ = /, $p_string);
+
+			push(@$kruskal_wallis_h, $h_value);
+			push(@$p_value, $p_val);
+			push(@$neg_log_p_value, 
+				( -1 * log($p_val))
+			);
 		}
 
 		# Add the row data to the Array Ref in the main Hash Ref
-		push(@{$wilcoxon_hash_ref_of_tables->{$table_type}},
+		push(@{$kruskal_wallis_hash_ref_of_tables->{$table_type}},
 			join("\n",
 				join("\t", @$header),
-				join("\t", @$wilcoxon_u),
+				join("\t", @$kruskal_wallis_h),
 				join("\t", @$p_value),
 				join("\t", @$neg_log_p_value),
-				join("\t", @$correction_factor),
-				join("\t", @$corrected_wilcoxon_u),
-				join("\t", @$corrected_p_value),
-				join("\t", @$neg_log_corrected_p_value),
-				join("\t", @$background_rank_sum),
-				join("\t", @$test_rank_sum),
 			)
 		);
 	}
 
-	return $wilcoxon_hash_ref_of_tables;
+	return $kruskal_wallis_hash_ref_of_tables;
 }
 
 sub parse_point_biserial {

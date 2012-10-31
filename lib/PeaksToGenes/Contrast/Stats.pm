@@ -4,8 +4,6 @@ use Moose;
 use Carp;
 use FindBin;
 use lib "$FindBin::Bin/../lib";
-use PeaksToGenes::Contrast::Stats::RankOrder;
-use PeaksToGenes::Contrast::Stats::Wilcoxon;
 use PeaksToGenes::Contrast::Stats::PointBiserialCorrelation;
 use PeaksToGenes::Contrast::Stats::ANOVA;
 use Data::Dumper;
@@ -25,9 +23,7 @@ has statistical_tests	=>	(
 has processors	=>	(
 	is			=>	'ro',
 	isa			=>	'Int',
-	default		=>	sub {
-		return 1;
-	}
+	default		=>	1,
 );
 
 sub run_statistical_tests {
@@ -40,30 +36,17 @@ sub run_statistical_tests {
 	# PeaksToGenes::Contrast::Stats::RankOrder::rank_order_genomic_regions
 	# subroutine to return a structure of rank ordered values for each
 	# data type at each relative genomic interval.
-	my $rank_ordered_genomic_regions = {};
-	if ( $self->statistical_tests->{'wilcoxon'} ) {
-		my $rank_order = PeaksToGenes::Contrast::Stats::RankOrder->new(
-			processors					=>	$self->processors,
+	if ( $self->statistical_tests->{'kruskal_wallis'} ) {
+
+		my $kruskal_wallis = PeaksToGenes::Contrast::Stats::ANOVA->new(
 			genomic_regions_structure	=>
 			$self->genomic_regions_structure,
-		);
-		$rank_ordered_genomic_regions =
-		$rank_order->rank_order_genomic_regions;
-	}
-
-	# If the Wilcoxon Rank-Sum test has been flagged for testing, run the
-	# test using PeaksToGenes::Contrast::Stats::Wilcoxon and run the
-	# PeaksToGenes::Contrast::Stats::Wilcoxon::rank_sum_test subroutine to
-	# return a Hash Ref of P-values for each genomic interval.
-	if ($self->statistical_tests->{'wilcoxon'}) {
-		my $wilcoxon = PeaksToGenes::Contrast::Stats::Wilcoxon->new(
-			rank_ordered_genomic_regions	=>
-			$rank_ordered_genomic_regions,
-			processors						=>	$self->processors
+			processors					=>	$self->processors,
 		);
 
-		# Add the results to the test_results Hash Ref
-		$test_results->{'wilcoxon'} = $wilcoxon->rank_sum_test;
+		$test_results->{kruskal_wallis} =
+		$kruskal_wallis->kruskal_wallis_anova;
+
 	}
 
 	# If the Point Biserial Correlation test has been flagged for testing,
@@ -77,6 +60,9 @@ sub run_statistical_tests {
 			$self->genomic_regions_structure,
 			processors					=>	$self->processors,
 		);
+
+		print "\n\nCalculating Point Biserial Correlation Coefficient\n\n";
+
 		$test_results->{'point_biserial'} =
 		$point_biserial->correlation_coefficient;
 	}
@@ -90,6 +76,9 @@ sub run_statistical_tests {
 			$self->genomic_regions_structure,
 			processors					=>	$self->processors,
 		);
+
+		print "\n\nCalculating Fisher-like ANOVA\n\n";
+
 		$test_results->{'anova'} = $anova->fisher_anova;
 	}
 

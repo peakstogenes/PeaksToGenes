@@ -4,6 +4,7 @@ use Carp;
 use FindBin;
 use lib "$FindBin::Bin/../lib";
 use PeaksToGenes::Contrast::GenomicRegions;
+use PeaksToGenes::Contrast::Genes;
 use PeaksToGenes::Contrast::Stats;
 use PeaksToGenes::Contrast::ParseStats;
 use PeaksToGenes::Contrast::Aggregate;
@@ -117,12 +118,24 @@ sub test_and_contrast {
 	# PeaksToGenes::Contrast::Genes::extract_genes to return Array Refs of
 	# valid test genes, invalid test genes, valid background genes, and
 	# invalid background genes.
-	my $genes = PeaksToGenes::Contrast::Genes->new(
-		schema				=>	$self->schema,
-		genome				=>	$self->genome,
-		test_genes_fh		=>	$self->test_genes_fh,
-		background_genes_fh	=>	$self->background_genes_fh,
-	);
+	my $genes;
+	if ( $self->background_genes_fh ) {
+
+		$genes = PeaksToGenes::Contrast::Genes->new(
+			schema				=>	$self->schema,
+			genome				=>	$self->genome,
+			test_genes_fh		=>	$self->test_genes_fh,
+			background_genes_fh	=>	$self->background_genes_fh,
+		);
+	} else {
+		$genes = PeaksToGenes::Contrast::Genes->new(
+			schema				=>	$self->schema,
+			genome				=>	$self->genome,
+			test_genes_fh		=>	$self->test_genes_fh,
+		);
+	}
+	
+	print "\n\nNow checking your lists of RefSeq accessions\n\n";
 	my ($valid_test_genes, $invalid_test_genes, $valid_background_genes,
 		$invalid_background_genes) = $genes->get_genes;
 
@@ -140,6 +153,8 @@ sub test_and_contrast {
 		genome				=>	$self->genome,
 		processors			=>	$self->processors,
 	);
+
+	print "\n\nNow extracting genomic information\n\n";
 	my $genomic_regions_structure =
 	$genomic_regions->extract_genomic_regions;
 
@@ -156,6 +171,9 @@ sub test_and_contrast {
 	# to determine which statistical tests have been defined by the user
 	# and will be run.
 	if ( $self->statistical_tests ) {
+
+		print "\n\nNow beginning to run statistical tests\n\n";
+
 		my $stats = PeaksToGenes::Contrast::Stats->new(
 			genomic_regions_structure	=>	$genomic_regions_structure,
 			statistical_tests			=>	$self->statistical_tests,
@@ -183,6 +201,9 @@ sub test_and_contrast {
 		genomic_regions_structure	=>	$genomic_regions_structure,
 		genomic_index				=>	$genomic_locations,
 	);
+
+	print "\n\nParsing statistical results into tables\n\n";
+
 	$parsed_array_refs->{aggregate} = $aggregate->create_table;
 
 	# Create an instance of PeaksToGenes::Contrast::Out and run the
@@ -192,6 +213,8 @@ sub test_and_contrast {
 		parsed_array_refs	=>	$parsed_array_refs,
 		contrast_name		=>	$self->contrast_name,
 	);
+
+	print "\n\nPrinting statistical tables to files\n\n";
 
 	$out->print_tables;
 }

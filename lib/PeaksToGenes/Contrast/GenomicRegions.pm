@@ -263,7 +263,7 @@ sub get_peaks {
 				# temporarily
 				my $data_array = [];
 
-				foreach my $gene_id_chunk (@{$self->get_chunks(900,
+				foreach my $gene_id_chunk (@{$self->get_chunks(500,
 					$self->$gene_type)}) {
 
 					# Extract the data from the result set corresponding to

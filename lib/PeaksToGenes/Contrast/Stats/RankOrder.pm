@@ -13,7 +13,7 @@ has genomic_regions_structure	=>	(
 has processors	=>	(
 	is			=>	'ro',
 	isa			=>	'Int',
-	required	=>	1,
+	default		=>	1,
 );
 
 sub rank_order_genomic_regions {

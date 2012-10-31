@@ -2,6 +2,7 @@ package PeaksToGenes::Update::UCSC 0.001;
 use Moose;
 use Carp;
 use FindBin;
+use lib "$FindBin::Bin/../lib";
 use PeaksToGenes::UCSC;
 use Data::Dumper;
 
@@ -150,6 +151,13 @@ module, otherwise it will return an Array Ref of file names.
 
 sub fetch_tables {
 	my $self = shift;
+
+	# Check to make sure that the genome defined by the user is a valid
+	# RefSeq genome
+	unless ( $self->genome_info->{$self->genome} ) {
+		croak "\n\nThe genome you have entered: " .
+		$self->genome . " is not a valid RefSeq genome. Please check to make sure you have entered it correctly.\n\n";
+	}
 
 	# Use the file_names subroutine to create a folder in the static
 	# directory for the genome to be updated. This will also delete any

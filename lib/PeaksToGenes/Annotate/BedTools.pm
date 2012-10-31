@@ -3,6 +3,7 @@ use Moose;
 use Carp;
 use FindBin;
 use lib "$FindBin::Bin/../lib";
+use PeaksToGenes::Update::UCSC;
 use Parallel::ForkManager;
 use Data::Dumper;
 
@@ -19,9 +20,9 @@ Version 0.001
 =head1 SYNOPSIS
 
 This module provides most of the business logic for the PeaksToGenes
-program. Given a bed file of peak summits, and a list of index files,
-this module will annotate the locations of the summits relative to
-the transcriptional start site of each transcript.
+program. Given a bed file of genomic intervals, and a list of index files,
+this module will annotate the locations of the summits relative to the
+transcriptional start site of each transcript.
 
 =head1 SUBROUTINES/METHODS
 
@@ -47,13 +48,11 @@ has genome	=>	(
 has index_files	=>	(
 	is			=>	'ro',
 	isa			=>	'ArrayRef[Str]',
-	required	=>	1,
 );
 
-has summits	=>	(
+has bed_file	=>	(
 	is			=>	'ro',
 	isa			=>	'Str',
-	required	=>	1,
 );
 
 has base_regex	=>	(
@@ -123,8 +122,8 @@ sub check_bed_file {
 	# Open the user-defined file, iterate through and parse the lines. Any
 	# errors found will cause an immediate termination of the script and
 	# return an error message to the user.
-	open my $summits_fh, "<", $self->summits or croak 
-	"Could not read from BED file: " . $self->summits . 
+	open my $summits_fh, "<", $self->bed_file or croak 
+	"Could not read from BED file: " . $self->bed_file . 
 	". Please check the permissions on this file. $!\n\n";
 	while (<$summits_fh>) {
 		my $line = $_;
@@ -166,8 +165,8 @@ sub check_bed_file {
 		# interval start in column two and the interval end in column three
 		# are valid coordinates based on the length of the chromosome
 		# defined in column one for the user-defined genome
-		unless (($start < $chromosome_sizes->{$chr}) && 
-			($stop < $chromosome_sizes->{$chr})) {
+		unless (($start <= $chromosome_sizes->{$chr}) && 
+			($stop <= $chromosome_sizes->{$chr})) {
 			croak "On line: $line_number the coordinates are not valid " .
 			"for the user-defined genome: " . $self->genome 
 			. ". Please check your file.\n\n";
@@ -207,12 +206,33 @@ sub check_bed_file {
 sub chromosome_sizes {
 	my $self = shift;
 
+	# Create an instance of PeaksToGenes::Update::UCSC and run the
+	# PeaksToGenes::Update::UCSC::genome_info subroutine to make sure that
+	# the user-define genome string is a valid RefSeq genome
+	my $ucsc = PeaksToGenes::Update::UCSC->new(
+		genome	=>	$self->genome,
+	);
+	unless ( $ucsc->genome_info->{$self->genome} ) {
+		croak "\n\nThe genome you have entered: " .
+		$self->genome . " is not a valid RefSeq annotated genome. Please check and make sure you have entered the correct genome\n\n";
+	}
+
 	# Fetch the genome_id for the user-defined genome
-	my $genome_id = $self->schema->resultset('AvailableGenome')->find(
+	my $genome_search = $self->schema->resultset('AvailableGenome')->find(
 		{
 			genome	=>	$self->genome
 		}
-	)->id;
+	);
+
+	# Pre-declare a scalar to hold the genome ID if it has been found in
+	# the PeaksToGenes database
+	my $genome_id;
+	if ( $genome_search ) {
+		$genome_id = $genome_search->id;
+	} else {
+		croak "\n\nThe genome: " . $self->genome . 
+		" has not been installed in the PeaksToGenes database. Please use Update Mode to install this genome.\n\n";
+	}
 
 	# Using the genome_id, fetch the file string for the chromosome sizes
 	# file corresponding to the user-defined genome
@@ -247,7 +267,7 @@ sub align_peaks {
 
 	# Copy the file string for the experimental intervals into a scalar
 	# string
-	my $summits_file = $self->summits;
+	my $summits_file = $self->bed_file;
 
 	# Pre-declare a Hash Ref to hold the intersected peaks information
 	my $indexed_peaks = {};
@@ -266,6 +286,11 @@ sub align_peaks {
 			my $peak_number = $data_structure->{peak_number};
 			my $peak_info = $data_structure->{peak_info};
 			my $interval_size = $data_structure->{interval_size};
+
+			# Pre-declare a local Hash Ref to hold the interval size data
+			# for each genomic interval for which a user-defined
+			# interval/peak overlaps
+			my $interval_size_hash = {};
 
 			# Parse the information, and store it in the Hash Ref
 			foreach my $intersected_peak
@@ -305,17 +330,42 @@ sub align_peaks {
 				}
 
 				# If an experimental interval has been found for this
-				# genomic interval, add to the length of the interval
-				# (really only used in the case of introns and exons.
-				# If not, set the string equal to the length of the
-				# genomic interval.
-				if ( $indexed_peaks->{$index_gene}{$interval_size} ) {
-					$indexed_peaks->{$index_gene}{$interval_size} +=
-					($index_stop - $index_start + 1);
+				# genomic interval, store the minimum and maximum
+				# index_start and index_stop to calculate the size of the
+				# interval
+				if (
+					$interval_size_hash->{$index_gene}{$interval_size}{min} ) {
+					if ( $index_start <
+						$interval_size_hash->{$index_gene}{$interval_size}{min}
+						) {
+							$interval_size_hash->{$index_gene}{$interval_size}{min}
+							= $index_start;
+						}
 				} else {
-					$indexed_peaks->{$index_gene}{$interval_size}
-					= ($index_stop - $index_start + 1);
+					$interval_size_hash->{$index_gene}{$interval_size}{min}
+					= $index_start;
 				}
+				if (
+					$interval_size_hash->{$index_gene}{$interval_size}{max} ) {
+					if ( $index_stop >
+						$interval_size_hash->{$index_gene}{$interval_size}{max}
+						) {
+							$interval_size_hash->{$index_gene}{$interval_size}{max}
+							= $index_stop;
+						}
+				} else {
+					$interval_size_hash->{$index_gene}{$interval_size}{max}
+					= $index_stop;
+				}
+			}
+
+			# Iterate through the interval_size_hash and calculate the size
+			# of the interval
+			foreach my $index_gene ( keys $interval_size_hash ) {
+				$indexed_peaks->{$index_gene}{$interval_size} =
+				$interval_size_hash->{$index_gene}{$interval_size}{max} -
+				$interval_size_hash->{$index_gene}{$interval_size}{min} +
+				1;
 			}
 		}
 	);

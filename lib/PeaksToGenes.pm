@@ -7,8 +7,11 @@ use lib "$FindBin::Bin/../lib";
 use PeaksToGenes::Schema;
 use PeaksToGenes::Annotate;
 use PeaksToGenes::Update;
-use PeaksToGenes::Update::UCSC;
 use PeaksToGenes::Contrast;
+use PeaksToGenes::SignalRatio;
+use PeaksToGenes::Delete;
+use PeaksToGenes::List;
+use File::Which;
 use Data::Dumper;
 
 with 'MooseX::Getopt';
@@ -35,48 +38,119 @@ in this distribution utlizing command-line options.
 
 =cut
 
-subtype 'Valid_Mode',
-	as 'Str',
-	where {$_ eq 'annotate' || $_ eq 'contrast' || $_ eq 'list' || $_ eq 'delete' || $_ eq 'update'},
-	message { "\n\nThe mode must be set to either \"annotate\", \"contrast\", \"list\" or \"delete\"\n\n"};
-
-has mode	=>	 (
+has annotate	=>	(
 	is				=>	'ro',
-	isa				=>	'Valid_Mode',
-	required		=>	1,
-	lazy			=>	1,
-	documentation	=>	"Mode to use PeaksToGenes in. Valid options: 'annotate' 'contrast' 'list' 'delete' 'update'",
-	default			=>	sub {$_ ? lc($_) : croak "\n\nYou must define the mode to run PeaksToGenes in.\nPlease use peaksToGenes.pl --usage to view available options.\n\n"  },
+	isa				=>	'Bool',
+	documentation	=>	'Set this mode to annotate a dataset and store the results in the PeaksToGenes database',
 );
 
-has schema	=>	(
+has update	=>	(
+	is				=>	'ro',
+	isa				=>	'Bool',
+	documentation	=>	'Set this mode to install the genomic coordinates for a RefSeq genome',
+);
+
+has list	=>	(
+	is				=>	'ro',
+	isa				=>	'Bool',
+	documentation	=>	'Set this mode to print out a list of the experimnetal names of datasets annotated in your installation of PeaksToGenes',
+);
+
+has delete	=>	(
+	is				=>	'ro',
+	isa				=>	'Bool',
+	documentation	=>	'Set this mode to delete a dataset from the PeaksToGenes database',
+);
+
+has contrast	=>	(
+	is				=>	'ro',
+	isa				=>	'Bool',
+	documentation	=>	'Set this mode to run PeaksToGenes in contrast mode',
+);
+
+has signal_ratio	=>	(
+	is				=>	'ro',
+	isa				=>	'Bool',
+	documentation	=>	'Set the mode to annoate a pair of IP and Input BED-format reads',
+);
+
+has ip_file	=>	(
+	is				=>	'ro',
+	isa				=>	'Str',
+	documentation	=>	'Signal Ratio mode only. The path to the BED-format file of IP reads',
+	required		=>	1,
+	lazy			=>	1,
+	default			=>	sub {
+		croak "\n\nTo run in signal_ratio mode, you must provide the path to the BED-format IP file.\n\n";
+	},
+);
+
+has input_file	=>	(
+	is				=>	'ro',
+	isa				=>	'Str',
+	documentation	=>	'Signal Ratio mode only. The path to the BED-format file of Input reads',
+	required		=>	1,
+	lazy			=>	1,
+	default			=>	sub {
+		croak "\n\nTo run in signal_ratio mode, you must provide the path to the BED-format Input file.\n\n";
+	},
+);
+
+has scaling_factor	=>	(
+	is				=>	'ro',
+	isa				=>	'Num',
+	default			=>	1,
+	documentation	=>	'Signal Ratio mode only. An optional factor, which is used to scale the number of Input reads. The product of the number of input reads and the scaling factor is used as the denominator when calculating the ratio of IP reads. Default: 1.',
+);
+
+has anova	=>	(
+	is				=>	'ro',
+	isa				=>	'Bool',
+	documentation	=>	'Contrast Mode only. Set this mode to run the ANOVA test in contrast mode',
+);
+
+has kruskal_wallis	=>	(
+	is				=>	'ro',
+	isa				=>	'Bool',
+	documentation	=>	'Contrast Mode only. Set this mode to run the Kruskal-Wallis nonparametric ANOVA test in contrast mode',
+);
+
+has biserial	=>	(
+	is				=>	'ro',
+	isa				=>	'Bool',
+	documentation	=>	'Contrast Mode only. Set this mode to calculate the point biserial correlation coefficient in contrast mode',
+);
+
+has _schema	=>	(
 	is			=>	'ro',
 	isa			=>	'PeaksToGenes::Schema',
 	default		=>	sub {
 		my $self = shift;
 		my $dsn = "dbi:SQLite:$FindBin::Bin/../db/peakstogenes.db";
-		my $schema = PeaksToGenes::Schema->connect($dsn);
+		my $schema = PeaksToGenes::Schema->connect($dsn, '', '', {
+				cascade_delete	=>	1});
 		return $schema;
 	},
 	required	=>	1,
+	reader		=>	'schema',
 );
 
 has genome	=>	(
-	is				=>	'rw',
+	is				=>	'ro',
 	isa				=>	'Str',
 	required		=>	1,
 	lazy			=>	1,
-	documentation	=>	"Genome to annotate peak summits with.",
-	default			=>	sub { croak "\n\nYou must provide a genome to annoate the summit file with.\n\n"},
+	documentation	=>	"The RefSeq genome string corresponding to the data you are working with (hg19, mm9, dm3, etc.)",
+	default			=>	sub { croak "\n\nYou must provide the genome corresponding to your experiment.\n\n"},
 );
 
-has summits	=>	(
-	is				=>	'rw',
+has bed_file	=>	(
+	is				=>	'ro',
 	isa				=>	'Str',
 	required		=>	1,
 	lazy			=>	1,
-	documentation	=>	"Path to the summit file",
-	default			=>	sub { croak "\n\nYou must provide a path to the summit file.\n\n"},
+	documentation	=>	"Annotation Mode only. Path to the BED-format file for annotation",
+	default			=>	sub { croak "\n\nYou must provide a path to the BED-format file.\n\n"},
 );
 
 has 'name'	=>	(
@@ -84,32 +158,40 @@ has 'name'	=>	(
 	isa				=>	'Str',
 	required		=>	1,
 	lazy			=>	1,
-	documentation	=>	"The name of the experimental sample, must be unique",
-	default			=>	sub { croak "\n\nYou must provide the unique name of the experimental sample.\n\n" },
+	documentation	=>	"The name of the experimental sample. Must be unique when running in Annotation Mode.",
+	default			=>	sub { croak "\n\nYou must provide the name of the experimental sample.\n\n" },
 );
 
-has 'create_database'	=>	(
-	is				=>	'ro',
-	isa				=>	'Bool',
-	documentation	=>	"A boolean flag to tell PeaksToGenes to insert into a database or not",
-);
-
-has 'genes'	=>	(
+has 'test_genes'	=>	(
 	is				=>	'ro',
 	isa				=>	'Str',
 	required		=>	1,
 	lazy			=>	1,
-	documentation	=>	"The file path to the list of RefSeq accessions (genes) you wish to extract from the database",
-	default			=>	sub { croak "\n\nYou must enter a file name to run in contrast mode\n\n" },
+	documentation	=>	"Contrast Mode only. The file path to the list of RefSeq accessions (genes) you wish to extract from the database as a test set",
+	default			=>	sub { croak "\n\nYou must enter a file name for the Test Genes to run in contrast mode\n\n" },
 );
+
+has 'background_genes'	=>	(
+	is				=>	'ro',
+	isa				=>	'Str',
+	documentation	=>	" Contrast Mode only. (Optional) The file path to the list of RefSeq accessions (genes) you wish to extract from the database as the background set. By defualt, the inverse (rest of the genome) from the list of test genes will be used as the background unless this flag is set",
+);
+
 
 has 'contrast_name'	=>	(
 	is				=>	'ro',
 	isa				=>	'Str',
 	required		=>	1,
 	lazy			=>	1,
-	documentation	=>	"The name of the contrast you are performing.",
+	documentation	=>	"Contrast Mode only. The name of the contrast you are performing.",
 	default			=>	sub { croak "\n\nYou must enter a contrast name to run in contrast mode\n\n" },
+);
+
+has processors		=>	(
+	is				=>	'ro',
+	isa				=>	'Int',
+	default			=>	1,
+	documentation	=>	"The number of processors you would like to run PeaksToGenes with",
 );
 
 =head2 execute
@@ -123,102 +205,189 @@ information in an SQLite3 database.
 
 sub execute {
 	my $self = shift;
-	$self->mode;
-	# Create an instance of PeaksToGenes::Update::UCSC to make sure that
-	# the user-defined genome can be used
-	my $ucsc = PeaksToGenes::Update::UCSC->new(
-		genome	=>	$self->genome,
-	);
-	unless ( $ucsc->genome_info->{$self->genome} ) {
-		croak "\n\nThe user defined genome: ", $self->genome, " is not annotated by RefSeq, please choose another genome\n\n";
-	}
-	# Based on the mode determined by the user, execute the appropriate series of actions
-	# to validate user-input and execute the desired functions
-	if ( $self->mode eq 'annotate' ) {
-		print "\n\nRunning in annotate mode...\n\n";
-		print "Path to intersectBed executable:\t", $self->_intersect_bed_executable, "\n\n";
-		print "Path to SQLite3 executable:\t\t", $self->_sqlite3_executable, "\n\n";
-		print "User-defined genome to annotate with:\t", $self->genome, "\n\n";
-		print "User-defined name of the experiment:\t", $self->name, "\n\n";
-		print "User-defined summits file:\t\t", $self->summits, "\n\n";
-		# Create an instance of PeaksToGenes::FileStructure to check if the user-defined genome
-		# exists. If it does, return a HashRef of information that includes the genome base-name,
-		# the genome_id for the many-to-many table relationships, and an ArrayRef of files used 
-		# to annotate the genome.
-		my $file_structure_test = PeaksToGenes::FileStructure->new(
+
+	# Run PeaksToGenes::_check_executables to be sure that the required
+	# external dependencies can be found and run by PeaksToGenes
+	$self->_check_executables;
+
+	# Determine the how the program will be run
+	if ( $self->_check_modes > 1 ) {
+
+		# The user has defined more than one mode, so exit.
+		croak "\n\nYou can only specify one mode to run in at a time. Please run peaksToGenes.pl --help to see usage\n\n";
+
+	} elsif ( $self->list ) {
+
+		# Run in list mode
+
+		# Create an instance of PeaksToGenes::List and run the
+		# PeaksToGenes::List::list_all_experiments subroutine to list all
+		# the experiments in the PeaksToGenes database
+		my $list = PeaksToGenes::List->new(
+			schema	=>	$self->schema
+		);
+
+		$list->list_all_experiments;
+	} elsif ( $self->delete ) {
+
+		# Run in delete mode
+
+		# Create an instance of PeaksToGenes::Delete and run the
+		# PeaksToGenes::Delete::seek_and_destroy subroutine to delete the
+		# dataset from the PeaksToGenes database
+		my $delete = PeaksToGenes::Delete->new(
 			schema	=>	$self->schema,
-			genome	=>	$self->genome,
 			name	=>	$self->name,
 		);
-		my $genome_information = $file_structure_test->test_and_extract;
-		# Create an instance of PeaksToGenes::BedTools
-		my $bedtools = PeaksToGenes::BedTools->new(
-			genome		=>	$self->genome,
-			schema		=>	$self->schema,
-			summits		=>	$self->summits,
-			index_files	=>	$genome_information,
-		);
-		# Use the PeaksToGenes::BedTools check_bed_file subroutine to ensure
-		# that the user-defined BED file is valid for the genome defined
-		$bedtools->check_bed_file;
-		# Use the annotate_peaks subroutine to determine the locations of user-defined
-		# genomic intervals relative to gene bodies
-		my $indexed_peaks = $bedtools->annotate_peaks;
-		# Create an instance of PeaksToGenes::Out
-		my $out = PeaksToGenes::Out->new(
-			indexed_peaks	=>	$indexed_peaks,
-			schema			=>	$self->schema,
-			name			=>	$self->name,
-			ordered_index	=>	$genome_information,
-			genome			=>	$self->genome,
-		);
-		$out->summary_and_out;
-		if ( $self->create_database ) {
-			$out->insert_peaks;
-		}
-		print "Operation completed!\n";
-	} elsif ( $self->mode eq 'contrast' ) {
-		print "\n\nRunning in contrast mode...\n\n";
-		# Create an instance of PeaksToGenes::Contrast
-		my $contrast = PeaksToGenes::Contrast->new(
-			genome			=>	$self->genome,
-			schema			=>	$self->schema,
-			name			=>	$self->name,
-			genes			=>	$self->genes,
-			contrast_name	=>	$self->contrast_name,
-		);
-		# Using PeaksToGenes::Contrast, determine if
-		# the name of the user-defined experiment has
-		# been indexed in the PeaksToGenes database. Then
-		# extract the RefSeq accessions to make sure that
-		# each one exists in the database. If there are any
-		# errors in either of the first two parameters,
-		# throw an error and return it to the user. Once
-		# the input has been tested, determine the aggregate
-		# number of peaks per relative genomic region based
-		# on the user-defined list of accessions.
-		my $invalid_accessions = $contrast->test_and_contrast;
-		if ( $invalid_accessions ) {
-			print "The following accessions were not found in the ", $self->name, " table:\n\n\t", join("\n\t", @$invalid_accessions), "\n\n";
-		}
-		print "Operation completed!\n";
-	} elsif ( $self->mode eq 'list' ) {
-		print "\n\nRunning in list mode...\n\n";
-	} elsif ( $self->mode eq 'delete' ) {
-		print "\n\nRunning in delete mode...\n\n";
-	} elsif ( $self->mode eq 'update' ) {
-		print "\n\nRunning in update mode...\n\n";
-		print "Path to SQLite3 executable:\t\t", $self->_sqlite3_executable, "\n\n";
-		print "User-defined genome to annotate with:\t", $self->genome, "\n\n";
-		# Create an instance of PeaksToGenes::Update
+
+		$delete->seek_and_destroy;
+	} elsif ( $self->update ) {
+
+		# Run in update mode
+
+		# Create an instance of PeaksToGenes::Update and run the
+		# PeaksToGenes::Update::update subroutine to fetch, create, and
+		# install the required files for PeaksToGenes
 		my $update = PeaksToGenes::Update->new(
-			schema	=>	$self->schema,
-			genome	=>	$self->genome,
+			schema		=>	$self->schema,
+			genome		=>	$self->genome,
+			processors	=>	$self->processors,
 		);
-		# Execute the update functions
+
 		$update->update;
-		print "Operation completed successfully!\n";
+
+	} elsif ( $self->annotate ) {
+
+		# Run in annotate mode
+
+		# Create an instance of PeaksToGenes::Annotate and run
+		# PeaksToGenes::Annotate::annotate to create a meta-gene profile of
+		# the dataset and insert this profile into the PeaksToGenes
+		# database
+		my $annotate = PeaksToGenes::Annotate->new(
+			schema		=>	$self->schema,
+			genome		=>	$self->genome,
+			name		=>	$self->name,
+			bed_file	=>	$self->bed_file,
+			processors	=>	$self->processors,
+		);
+
+		$annotate->annotate;
+
+	} elsif ( $self->contrast ) {
+
+		# Run in contrast mode
+
+		print "\n\nRunning in contrast mode...\n\n";
+
+		# Create an instance of PeaksToGenes::Contrast and run the
+		# PeaksToGenes::Contrast::test_and_contrast subroutine
+		if ( $self->background_genes ) {
+			my $contrast = PeaksToGenes::Contrast->new(
+				schema				=>	$self->schema,
+				genome				=>	$self->genome,
+				name				=>	$self->name,
+				test_genes_fh		=>	$self->test_genes,
+				background_genes_fh	=>	$self->background_genes,
+				contrast_name		=>	$self->contrast_name,
+				processors			=>	$self->processors,
+				statistical_tests	=>	{
+					anova			=>	$self->anova,
+					kruskal_wallis	=>	$self->kruskal_wallis,
+					point_biserial	=>	$self->biserial
+				}
+			);
+
+			$contrast->test_and_contrast;
+		} else {
+			my $contrast = PeaksToGenes::Contrast->new(
+				schema				=>	$self->schema,
+				genome				=>	$self->genome,
+				name				=>	$self->name,
+				test_genes_fh		=>	$self->test_genes,
+				contrast_name		=>	$self->contrast_name,
+				processors			=>	$self->processors,
+				statistical_tests	=>	{
+					anova			=>	$self->anova,
+					kruskal_wallis	=>	$self->kruskal_wallis,
+					point_biserial	=>	$self->biserial
+				}
+			);
+
+			$contrast->test_and_contrast;
+		}
+	} elsif ( $self->signal_ratio ) {
+
+		# Run in signal_ratio mode
+
+		# Create an instance of PeaksToGenes::SignalRatio and run the
+		# PeaksToGenes::SignalRatio::create_bed_file subroutine to check
+		# the user-defined BED-format files, and then calculate the ratio
+		# of IP reads to Input reads. The ratios will be reported in
+		# BED-format.
+		my $signal_ratio = PeaksToGenes::SignalRatio->new(
+			ip_file			=>	$self->ip_file,
+			input_file		=>	$self->input_file,
+			scaling_factor	=>	$self->scaling_factor,
+			schema			=>	$self->schema,
+			name			=>	$self->name,
+			genome			=>	$self->genome,
+			processors		=>	$self->processors,
+		);
+
+		$signal_ratio->index_signal_ratio;
+
+	} else {
+		croak "\n\nYou must set a mode to run PeaksToGenes in. Use peakToGenes.pl --help for more information\n\n";
 	}
+}
+
+sub _check_executables {
+	my $self = shift;
+
+	# Check to make sure that MySQL, SQLite and intersectBed are installed
+	# and are found in the $PATH. If they are not, kill the program and
+	# inform the user.
+	my $intersectbed_path = which('intersectBed');
+	croak 'BedTools is either not installed, or is not found in the $PATH' 
+		unless ( -X -x $intersectbed_path );
+	my $sqlite_path = which('sqlite3');
+	croak 'SQLite3 is either not installed or is not found in the $PATH'
+		unless (-X -x $sqlite_path);
+	my $mysql_path = which('mysql');
+	croak 'MySQL is either not installed or is not found in the $PATH'
+		unless (-X -x $mysql_path);
+}
+
+sub _check_modes {
+	my $self = shift;
+
+	# Count the number of modes the user has defined and return an integer
+	# for the number of modes defined
+
+	# Pre-define an integer value for the number of modes defined
+	my $bool_test = 0;
+
+	if ( $self->delete ) {
+		$bool_test++;
+	}
+	if ( $self->list ) {
+		$bool_test++;
+	}
+	if ( $self->annotate ) {
+		$bool_test++;
+	}
+	if ( $self->update ) {
+		$bool_test++;
+	}
+	if ( $self->contrast ) {
+		$bool_test++;
+	}
+	if ( $self->signal_ratio ) {
+		$bool_test++;
+	}
+
+	return $bool_test;
 }
 
 =head1 AUTHOR

@@ -60,6 +60,7 @@ Finally, it will update the AvailableGenomes database.
 
 sub update {
 	my $self = shift;
+
 	# Create an instance on PeaksToGenes::Update::UCSC
 	my $ucsc = PeaksToGenes::Update::UCSC->new(
 		genome	=>	$self->genome,
