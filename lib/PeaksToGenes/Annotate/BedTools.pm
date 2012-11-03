@@ -187,7 +187,7 @@ sub check_bed_file {
 			croak "On line: $line_number you do not have a score entered ".
 			"for your peak/interval. If these intervals do not have " . 
 			"scores associated with them, please use the helper script " .
-			"to add a nominal score in the fifth column.\n\n";
+			"to add a nominal score in the fifth column.\n\n" unless ( $score == 0 );
 		}
 
 		# Test to make sure there are no other tab-delimited fields in the
