@@ -89,9 +89,13 @@ sub parse_kruskal_wallis {
 
 			push(@$kruskal_wallis_h, $h_value);
 			push(@$p_value, $p_val);
-			push(@$neg_log_p_value, 
-				( -1 * log($p_val))
-			);
+			if ($p_val) {
+				push(@$neg_log_p_value, 
+					( -1 * log($p_val))
+				);
+			} else {
+				push(@$p_value, 0);
+			}
 		}
 
 		# Add the row data to the Array Ref in the main Hash Ref
