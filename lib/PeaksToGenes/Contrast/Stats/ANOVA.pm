@@ -34,8 +34,11 @@ sub fisher_anova {
 		sub {
 			my ($pid, $exit_code, $ident, $exit_signal, $core_dump,
 				$data_structure) = @_;
-			$test_results->{$data_structure->{genomic_region}}{$data_structure->{type}}
-			= $data_structure->{anova};
+			if ( $data_structure && $data_structure->{genomic_region} &&
+				$data_structure->{type} && $data_structure->{anova} ) {
+				$test_results->{$data_structure->{genomic_region}}{$data_structure->{type}}
+				= $data_structure->{anova};
+			}
 		}
 	);
 
