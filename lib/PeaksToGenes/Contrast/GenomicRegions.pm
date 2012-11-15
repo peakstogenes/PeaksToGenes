@@ -104,19 +104,43 @@ has processors	=>	(
 sub extract_genomic_regions {
 	my $self = shift;
 
-
 	# Create a Hash Ref of Hash Refs of Hash Refs of Array Refs to hold the
 	# information extracted from the tables by calling
 	# PeaksToGenes::Contrast::GenomicRegions::create_blank_index.
 	my $genomic_regions_structure = $self->create_blank_index;
 
+	# Convert the lists of test genes and background genes into Hash Refs
+	my $test_ids = $self->array_to_hash($self->test_genes);
+	my $background_ids = $self->array_to_hash($self->background_genes);
+
+	# Run the PeaksToGenes::Contrast::GenomicRegions::all_regions
+	# subroutine to return Hash Refs of all genomic regions information for
+	# the given data set
+	my $genomic_regions_all_data =
+	$self->all_regions($genomic_regions_structure);
+
 	# Run the PeaksToGenes::Contrast::GenomicRegions::get_peaks
 	# subroutine to return an Array Ref of peaks per Kb per genomic region
 	$genomic_regions_structure =
-	$self->get_peaks($genomic_regions_structure);
+	$self->get_peaks($genomic_regions_structure, $genomic_regions_all_data,
+		$test_ids, $background_ids);
 
 	return $genomic_regions_structure;
 
+}
+
+sub array_to_hash {
+	my ($self, $array) = @_;
+
+	# Pre-declare a Hash Ref to hold the ids
+	my $hash = {};
+
+	# Iterate through the array, storing the ids in the Hash Ref
+	foreach my $id (@$array) {
+		$hash->{$id} = 1;
+	}
+
+	return $hash;
 }
 
 sub get_chunks {
@@ -193,39 +217,58 @@ sub create_blank_index {
 	return $genomic_regions_structure;
 }
 
-sub get_peaks {
+sub all_regions {
 	my ($self, $genomic_regions_structure) = @_;
 
-	# Get the experiment ID from the Experiment result set
+	# Get the experiment id
 	my $experiment_id = $self->schema->resultset('Experiment')->find(
 		{
 			experiment	=>	$self->name
 		}
 	)->id;
 
-	# Pre-declare a Hash Ref to hold the result sets for each table
-	my $hash_ref_of_result_sets = {};
+	if ( ! $experiment_id ) {
+		croak "The experiment name " . $self->name . " was not found in "
+		. "the PeaksToGenes database\n\n" unless ( $experiment_id == 0 );
+	}
 
-	# Make an initial pass through the structure and extract result sets
-	# for the experiment for each table in a hash
-	foreach my $location (keys
+	# Pre-declare a Hash Ref to hold the genomic regions data
+	my $genomic_regions_all_data = {};
+
+	foreach my $location ( keys
 		%{$genomic_regions_structure->{test_genes}}) {
-		foreach my $table_type (keys
-			%{$genomic_regions_structure->{test_genes}{$location}}) {
-			my $table =
-			$self->table_dispatch->{$location}{$table_type};
 
-			# Fetch the entire result set matching for the table and store
-			# it in the Hash Ref
-			$hash_ref_of_result_sets->{$location}{$table_type} =
-				$self->schema->resultset($table)->search(
-					{
-						name	=>	$experiment_id
-					}
+		foreach my $table_type ( keys
+			%{$genomic_regions_structure->{test_genes}{$location}}) {
+
+			# Get the table name from the table dispatch
+			my $table = $self->table_dispatch->{$location}{$table_type};
+
+			# Get the result set from the PeaksToGenes database
+			# corresponding to the current location and user-defined
+			# experiment
+			my $current_location_result_set =
+			$self->schema->resultset($table)->search(
+				{
+					name	=>	$experiment_id
+				}
 			);
 
+			$current_location_result_set->result_class('DBIx::Class::ResultClass::HashRefInflator');
+
+			$genomic_regions_all_data->{$location}{$table_type} =
+			$current_location_result_set;
+
 		}
+
 	}
+
+	return $genomic_regions_all_data;
+}
+
+sub get_peaks {
+	my ($self, $genomic_regions_structure, $genomic_regions_all_data,
+		$test_ids, $background_ids) = @_;
 
 	# Create an instance of Parallel::ForkManager with the number of
 	# threads allowed set to the number of processors defined by the user
@@ -236,102 +279,81 @@ sub get_peaks {
 		sub {
 			my ($pid, $exit_code, $ident, $exit_signal, $core_dump,
 				$data_structure) = @_;
-			$genomic_regions_structure->{$data_structure->{'gene_type'}}{$data_structure->{'location'}}{$data_structure->{'table_type'}}
-			= $data_structure->{'data'};
+			$genomic_regions_structure->{test_genes}{$data_structure->{'location'}}{$data_structure->{'table_type'}}
+			= $data_structure->{'test_genes_data'};
+			$genomic_regions_structure->{background_genes}{$data_structure->{'location'}}{$data_structure->{'table_type'}}
+			= $data_structure->{'background_genes_data'};
 		}
 	);
 
+	foreach my $location ( keys %$genomic_regions_all_data ) {
+		foreach  my $table_type ( keys
+			%{$genomic_regions_all_data->{$location}} ) {
 
-	# Iterate through the structure, and extract the information from the
-	# tables
-	foreach my $location (keys
-		%{$genomic_regions_structure->{test_genes}}) {
-		foreach my $table_type (keys
-			%{$genomic_regions_structure->{test_genes}{$location}}) {
+			# Start a new thread if one is available
+			$pm->start and next;
 
-			my $column_accessor = $location . '_' . $table_type;
-			my $table =
-			$self->table_dispatch->{$location}{$table_type};
+			# Pre-declare Array Refs for the test genes and background
+			# genes respectively
+			my $test_data = [];
+			my $background_data = [];
 
-			# Iterate through the gene types 
-			foreach my $gene_type ( qw( test_genes background_genes ) ) {
+			my $column = $location . "_" . $table_type;
 
-				# If there are threads available, start a new one
-				$pm->start and next;
-
-				# Create a local Array Ref to store the data values
-				# temporarily
-				my $data_array = [];
-
-				foreach my $gene_id_chunk (@{$self->get_chunks(500,
-					$self->$gene_type)}) {
-
-					# Extract the data from the result set corresponding to
-					# the genes of interest
-					my $result_data =
-					$hash_ref_of_result_sets->{$location}{$table_type}->search(
-						{
-							gene	=>	$gene_id_chunk
-						}
-					);
-
-					my @result_column =
-					$result_data->get_column($column_accessor)->all;
-
+			while ( my $location_result =
+				$genomic_regions_all_data->{$location}{$table_type}->next)
+			{
+				if (  $test_ids->{$location_result->{gene}} ) {
 					if ( $table_type eq 'number_of_peaks' ) {
-						foreach my $result (@result_column) {
-							push(@$data_array, $result) 
-								if (
-									$result && $result =~ /\d/
-								);
+						if ( $location_result->{$column} ) {
+							push(@$test_data, $location_result->{$column});
+						} else {
+							push(@$test_data, 0);
 						}
-					} else {
-						foreach my $result (@result_column) {
-							push(@$data_array,
-								@{$self->parse_peaks_information($result)}) if
-							$result;
+					} elsif ( $table_type eq 'peaks_information' ) {
+						if ( $location_result->{$column} ) {
+							push(@$test_data,
+								@{$self->parse_peaks_information($location_result->{$column})});
+						} else {
+							push(@$test_data, 0);
 						}
 					}
-
-#					while (my $result_row = $result_data->next) {
-#						if ( $result_row->$column_accessor ) {
-#							if ($table_type eq 'number_of_peaks') {
-#								push
-#								(@$data_array,
-#									$result_row->$column_accessor
-#								) if ( $result_row->$column_accessor =~
-#									/\d/);
-#							} else {
-#								# Call the parse_peaks_information
-#								# subroutine to extract the peak score from
-#								# the string
-#								push
-#								(@$data_array,
-#									@{$self->parse_peaks_information($result_row->$column_accessor)}
-#								);
-#							}
-#						}
-#					}
-				}
-
-				# Fill the array with zeros in for genes, which do not
-				# have a peak in the current position
-				for (my $i = @$data_array;
-					$i < @{$self->$gene_type}; $i++) {
-					push
-					(@$data_array,
-						0
-					);
-				}
-				$pm->finish(0,
-					{
-						gene_type	=>	$gene_type,
-						location	=>	$location,
-						table_type	=>	$table_type,
-						data		=>	$data_array,
+				} elsif ( $background_ids->{$location_result->{gene}} ) {
+					if ( $table_type eq 'number_of_peaks' ) {
+						if ( $location_result->{$column} ) {
+							push(@$background_data, $location_result->{$column});
+						} else {
+							push(@$background_data, 0);
+						}
+					} elsif ( $table_type eq 'peaks_information' ) {
+						if ( $location_result->{$column} ) {
+							push(@$background_data,
+								@{$self->parse_peaks_information($location_result->{$column})});
+						} else {
+							push(@$background_data, 0);
+						}
 					}
-				);
+				}
 			}
+
+			# Fill the test and background gene lists with zeros for the
+			# genes that are not found in the PeaksToGenes database
+			for (my $i = @$test_data; $i < @{$self->test_genes}; $i++) {
+				push(@$test_data, 0);
+			}
+			for (my $i = @$background_data; $i <
+				@{$self->background_genes}; $i++) {
+				push(@$background_data, 0);
+			}
+
+			$pm->finish(0,
+				{
+					table_type				=>	$table_type,
+					location				=>	$location,
+					test_genes_data			=>	$test_data,
+					background_genes_data	=>	$background_data,
+				}
+			);
 		}
 	}
 

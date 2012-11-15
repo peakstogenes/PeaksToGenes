@@ -70,6 +70,9 @@ sub get_genes {
 	# defined by the user
 	my $all_genes_result_set = $self->all_genes;
 
+	# Extract the accessions from the test genes file
+	my $test_accessions = $self->extract_accessions($self->test_genes_fh);
+
 	# Call PeaksToGenes::Contrast::Genes::extract_genes to extract an Array
 	# Ref of transcript ID's for the valid accessions, and an Array Ref of
 	# RefSeq accessions not found in the list of accessions for the
@@ -101,6 +104,25 @@ sub get_genes {
 		return ($valid_test_ids, $invalid_test_accessions,
 			$valid_background_ids, []);
 	}
+}
+
+sub extract_accessions {
+	my ($self, $fh) = @_;
+
+	# Pre-declare a Hash Ref to hold the accessions defined in the file
+	my $accessions_hash = {};
+
+	# Open the user-defined file of accessions, iterate through the file,
+	# storing the accessions in a Hash Ref
+	open my $file, "<", $fh or croak "Could not read from $fh.
+	Please check that you have entered the file correctly.$!\n";
+	while (<$file>) {
+		my $line = $_;
+		chomp($line);
+		$accessions_hash->{$line} = 1;
+	}
+
+	return $accessions_hash;
 }
 
 sub all_genes {
