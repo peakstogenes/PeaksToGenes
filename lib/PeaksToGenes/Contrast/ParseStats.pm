@@ -67,8 +67,6 @@ sub parse_kruskal_wallis {
 		my $header = ['Result Type' ];
 		my $kruskal_wallis_h = ['Kruskal-Wallis H statistic'];
 		my $p_value = ['p-value'];
-		my $neg_log_p_value = ['Negative log p-value'];
-
 
 		foreach my $genomic_location (@{$self->genomic_index}) {
 
@@ -89,13 +87,6 @@ sub parse_kruskal_wallis {
 
 			push(@$kruskal_wallis_h, $h_value);
 			push(@$p_value, $p_val);
-			if ($p_val) {
-				push(@$neg_log_p_value, 
-					( -1 * log($p_val))
-				);
-			} else {
-				push(@$p_value, 0);
-			}
 		}
 
 		# Add the row data to the Array Ref in the main Hash Ref
@@ -104,7 +95,6 @@ sub parse_kruskal_wallis {
 				join("\t", @$header),
 				join("\t", @$kruskal_wallis_h),
 				join("\t", @$p_value),
-				join("\t", @$neg_log_p_value),
 			)
 		);
 	}
@@ -162,7 +152,6 @@ sub parse_fisher_anova {
 		my $header = ['Result Type' ];
 		my $f_statistic = ['F statistic'];
 		my $p_value = ['p-value'];
-		my $neg_log_p_value = ['Negative log p-value'];
 		my $numerator_degrees_of_freedom = 
 			['Numerator degrees of freedom'];
 		my $denominator_degrees_of_freedom = 
@@ -197,13 +186,11 @@ sub parse_fisher_anova {
 				my ($p_string, $p_value_num) = split(/ = /,
 					$p_value_string);
 				push(@$p_value, $p_value_num);
-				$p_value_num ? push(@$neg_log_p_value, (-1 *
-						log($p_value_num))) : push(@$neg_log_p_value, 0);
 			} else {
+
 				# If there was no result from the ANOVA test, return undef
 				push(@$f_statistic, 'undef');
 				push(@$p_value, 'undef');
-				push(@$neg_log_p_value, 'undef');
 				push(@$denominator_degrees_of_freedom, 'undef');
 				push(@$numerator_degrees_of_freedom, 'undef');
 			}
@@ -215,7 +202,6 @@ sub parse_fisher_anova {
 				join("\t", @$header),
 				join("\t", @$f_statistic),
 				join("\t", @$p_value),
-				join("\t", @$neg_log_p_value),
 				join("\t", @$numerator_degrees_of_freedom),
 				join("\t", @$denominator_degrees_of_freedom),
 			)
