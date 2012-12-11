@@ -106,7 +106,7 @@ sub test_genome {
 			genome	=>	$self->genome
 		}
 	);
-	unless ( $available_genomes_search_result->genome eq $self->genome ) {
+	unless ( $available_genomes_search_result && $available_genomes_search_result->genome eq $self->genome ) {
 		croak "\n\nThe user-defined genome " . $self->genome . " has not been indexed. Please use the 'update' function to add the genome.\n\n";
 	}
 	return $available_genomes_search_result;

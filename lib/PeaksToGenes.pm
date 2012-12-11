@@ -11,6 +11,7 @@ use PeaksToGenes::Contrast;
 use PeaksToGenes::SignalRatio;
 use PeaksToGenes::Delete;
 use PeaksToGenes::List;
+use PeaksToGenes::Matrix;
 use File::Which;
 use Data::Dumper;
 
@@ -72,6 +73,12 @@ has signal_ratio	=>	(
 	is				=>	'ro',
 	isa				=>	'Bool',
 	documentation	=>	'Set the mode to annoate a pair of IP and Input BED-format reads',
+);
+
+has matrix			=>	(
+	is				=>	'ro',
+	isa				=>	'Bool',
+	documentation	=>	'Set this mode to export a tab-delimited file of peaks/signal ratios for a set of experiments and relative regions for all defined transcripts',
 );
 
 has ip_file	=>	(
@@ -162,6 +169,15 @@ has 'name'	=>	(
 	default			=>	sub { croak "\n\nYou must provide the name of the experimental sample.\n\n" },
 );
 
+has 'matrix_names'	=>	(
+	is				=>	'ro',
+	isa				=>	'ArrayRef[Str]',
+	documentation	=>	'The names of the experimental samples you wish to combine into a matrix file',
+	required		=>	1,
+	lazy			=>	1,
+	default			=>	sub {[]},
+);
+
 has 'test_genes'	=>	(
 	is				=>	'ro',
 	isa				=>	'Str',
@@ -177,6 +193,21 @@ has 'background_genes'	=>	(
 	documentation	=>	" Contrast Mode only. (Optional) The file path to the list of RefSeq accessions (genes) you wish to extract from the database as the background set. By defualt, the inverse (rest of the genome) from the list of test genes will be used as the background unless this flag is set",
 );
 
+has gene_list		=>	(
+	is				=>	'ro',
+	isa				=>	'Str',
+	documentation	=>	'Matrix mode only. (Optional) The file path to the list of RefSeq accessions (genes) you wish to use to build the matrix file. Default: all genes in RefSeq genome.',
+	default			=>	'',
+);
+
+has position_limit	=>	(
+	is				=>	'ro',
+	isa				=>	'Int',
+	required		=>	1,
+	lazy			=>	1,
+	documentation	=>	'Matrix mode only. (Optional) The integer value for the limits (in Kb) to be used upstream and downstream from the TSS and TSS respectively when making the matrix file. Default: 10',
+	default			=>	10,
+);
 
 has 'contrast_name'	=>	(
 	is				=>	'ro',
@@ -337,6 +368,23 @@ sub execute {
 
 		$signal_ratio->index_signal_ratio;
 
+	} elsif ( $self->matrix ) { 
+
+		# Run in matrix mode
+		
+		# Create an instance of PeaksToGenes::Matrix and run the
+		# PeaksToGenes::Matrix::create_matrix subroutine to extract the
+		# information for each dataset, and print the information to a
+		# tab-delimited file
+		my $matrix = PeaksToGenes::Matrix->new(
+			matrix_names	=>	$self->matrix_names,
+			schema			=>	$self->schema,
+			genome			=>	$self->genome,
+			gene_list		=>	$self->gene_list,
+			position_limit	=>	$self->position_limit,
+		);
+
+		$matrix->create_matrix;
 	} else {
 		croak "\n\nYou must set a mode to run PeaksToGenes in. Use peakToGenes.pl --help for more information\n\n";
 	}
@@ -384,6 +432,9 @@ sub _check_modes {
 		$bool_test++;
 	}
 	if ( $self->signal_ratio ) {
+		$bool_test++;
+	}
+	if ( $self->matrix ) {
 		$bool_test++;
 	}
 

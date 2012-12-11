@@ -102,7 +102,7 @@ sub annotate_signal_ratio {
 		}
 	);
 
-	# Iterate through the ordered index, and intersect the Summits file
+	# Iterate through the ordered index, and intersect the reads file
 	# with the index file. Extract the information from any intersections
 	# that occur and store them in the indexed_peaks Hash Ref.
 	foreach my $index_file (@{$self->genomic_index}) {
@@ -147,16 +147,17 @@ sub annotate_signal_ratio {
 				chomp ($intersected_ip_line);
 
 				# Split the line by tab
-				my ($ip_chr, $ip_start, $ip_end, $ip_score, $index_chr,
-					$index_start, $index_stop, $index_gene, $overlap) =
-				split(/\t/, $intersected_ip_line);
+				my ($ip_chr, $ip_start, $ip_end, $ip_number_reads,
+					$index_chr, $index_start, $index_stop, $index_gene,
+					$overlap) = split(/\t/, $intersected_ip_line);
 
+				# Store the number of IP reads per interval
 				if ( $ip_peaks_hash_ref->{$index_gene}{$peak_number} ) {
 					$ip_peaks_hash_ref->{$index_gene}{$peak_number} +=
-					$ip_score;
+					$ip_number_reads;
 				} else {
 					$ip_peaks_hash_ref->{$index_gene}{$peak_number} =
-					$ip_score;
+					$ip_number_reads;
 				}
 
 				# If an experimental interval has been found for this
@@ -220,16 +221,17 @@ sub annotate_signal_ratio {
 				chomp ($intersected_input_line);
 
 				# Split the line by tab
-				my ($input_chr, $input_start, $input_end,  $input_score,
-					$index_chr, $index_start, $index_stop, $index_gene,
-					$overlap) = split(/\t/, $intersected_input_line);
+				my ($input_chr, $input_start, $input_end,
+					$input_number_reads, $index_chr, $index_start,
+					$index_stop, $index_gene, $overlap) = split(/\t/,
+					$intersected_input_line);
 
 				if ( $input_peaks_hash_ref->{$index_gene}{$peak_number} ) {
 					$input_peaks_hash_ref->{$index_gene}{$peak_number} +=
-					$input_score;
+					$input_number_reads;
 				} else {
 					$input_peaks_hash_ref->{$index_gene}{$peak_number} =
-					$input_score;
+					$input_number_reads;
 				}
 			}
 

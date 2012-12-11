@@ -84,6 +84,9 @@ sub index_signal_ratio {
 	unlink ($merged_ip_file);
 	unlink ($merged_input_file);
 
+	print Dumper $indexed_signal_ratios;
+	die "Done testing";
+
 	# Create an instance of PeaksToGenes::Annotate::Database and run the
 	# PeaksToGenes::Annotate::Database::parse_and_store subroutine to
 	# insert the information into the PeaksToGenes database
@@ -120,25 +123,119 @@ sub get_genomic_index {
 sub check_files {
 	my $self = shift;
 
-	# Create an instance of PeaksToGenes::Annotate::BedTools and use the
-	# PeaksToGenes::Annotate::BedTools::check_bed_file for both the IP and
-	# Input files to make sure that the files are correctly formatted
-	my $ip_bed_checker = PeaksToGenes::Annotate::BedTools->new(
+	# Create an instance of PeaksToGenes::Annotate::BedTools to fetch the
+	# chromosome sizes for the given genome
+	my $annotate_bedtools = PeaksToGenes::Annotate::BedTools->new(
 		schema		=>	$self->schema,
 		genome		=>	$self->genome,
-		bed_file	=>	$self->ip_file,
+		bed_file	=>	$self->ip_file
 	);
 
-	$ip_bed_checker->check_bed_file;
+	# Fetch the chromosome sizes from the database by calling
+	# PeaksToGenes::Annotate::BedTools::chromosome_sizes
+	my $chromosome_sizes = $annotate_bedtools->chromosome_sizes;
 
-	my $input_bed_checker = PeaksToGenes::Annotate::BedTools->new(
-		schema		=>	$self->schema,
-		genome		=>	$self->genome,
-		bed_file	=>	$self->input_file,
-	);
+	foreach my $bed_file ( $self->ip_file, $self->input_file ) {
 
-	$input_bed_checker->check_bed_file;
+		print "\n\nNow checking $bed_file to ensure that the contents " .
+		"are valid\n\n";
 
+		# Pre-declare a line number to return useful errors to the user
+		my $line_number = 1;
+
+		# Open the user-defined file, iterate through and parse the lines. Any
+		# errors found will cause an immediate termination of the script and
+		# return an error message to the user.
+		open my $summits_fh, "<", $bed_file or croak 
+		"Could not read from BED file: " . $self->bed_file . 
+		". Please check the permissions on this file. $!\n\n";
+		while (<$summits_fh>) {
+			my $line = $_;
+			chomp ($line);
+			# Split the line by tab characters
+			my ($chr, $start, $stop, $name, $score, $strand, $rest_of_line) =
+			split(/\t/, $line);
+
+			# Test to make sure the chromosome defined in column 1 is a valid
+			# chromosome for the user-defined genome
+			unless ( $chromosome_sizes->{$chr} ) {
+				croak "On line: $line_number the chromosome: " . $chr . 
+				" is not defined in the user-defined genome: " . 
+				$self->genome . 
+				". Please check your file: $bed_file and the genome you would like to " .
+				"use.\n\n";
+			}
+
+			# Test to make sure that the values in for the interval start in
+			# column 2 and the interval end in column 3 are integers
+			unless ( $start =~ /^\d+$/ ) {
+				croak "On line: $line_number the interval start defined: " .
+				$start . " is not an integer. Please check your file:
+				$bed_file.\n\n";
+			}
+			unless ( $stop =~ /^\d+$/ ) {
+				croak "On line: $line_number the interval stop defined: " .
+				$stop . " is not an integer. Please check your file:
+				$bed_file.\n\n";
+			}
+
+			# Test to make sure the integer value defined for the interval end
+			# in column three is greater than the interval value defined for
+			# the interval start in column two
+			unless ( $stop > $start ) {
+				croak "On line: $line_number the stop: $stop is not larger " .
+				"than the start: $start. Please check your file: $bed_file.\n\n";
+			}
+
+			# Test to make sure that the integer values defined for the
+			# interval start in column two and the interval end in column three
+			# are valid coordinates based on the length of the chromosome
+			# defined in column one for the user-defined genome
+			unless (($start <= $chromosome_sizes->{$chr}) && 
+				($stop <= $chromosome_sizes->{$chr})) {
+				croak "On line: $line_number the coordinates are not valid " .
+				"for the user-defined genome: " . $self->genome 
+				. ". Please check your file: $bed_file.\n\n";
+			}
+
+			# Test to make sure that a name is defined in the fourth column. It
+			# does not have to be unique.
+			unless ($name) {
+				croak "On line: $line_number you do not have anything in the "
+				. "fourth column to designate an interval/peak name. Please " .
+				"check your file: $bed_file or use the helper script to add a nominal " .
+				"name in this column.\n\n";
+			}
+
+			# Test to make sure a score is defined in the fifth column and
+			# that it is a numerical value 
+			unless ($score && ($score >= 0 || $score <= 0)) {
+				croak "On line: $line_number of your file: $bed_file you "
+				. "do not have a score entered ".
+				"for your peak/interval. If these intervals do not have " . 
+				"scores associated with them, please use the helper script " .
+				"to add a nominal score in the fifth column.\n\n" unless (
+					$score == 0 );
+			}
+
+			unless ($strand eq '-' || $strand eq '+') {
+				croak "On line: $line_number of your file: $bed_file," .
+				" there is not a valid entry in the sixth column for the "
+				. "strand. It should be either a '-' or a '+'\n\n";
+			}
+
+			# Test to make sure there are no other tab-delimited fields in the
+			# file past the strand in the sixth column.
+			if ($rest_of_line){
+				croak "On line: $line_number, you have extra tab-" . 
+				"delimited items after the sixth (strand) column. Please " .
+				"use the helper script to trim these entries from your " .
+				"file: $bed_file.\n\n";
+			}
+
+			$line_number++;
+		}
+	}
 }
 
 sub merge_files {
@@ -157,8 +254,8 @@ sub merge_files {
 
 	# Run mergeBed to merge the overlapping read intervals and add the
 	# scores together
-	`mergeBed -scores sum -i $unmerged_ip_file > $merged_ip_file`;
-	`mergeBed -scores sum -i $unmerged_input_file > $merged_input_file`;
+	`mergeBed -n -i $unmerged_ip_file > $merged_ip_file`;
+	`mergeBed -n -i $unmerged_input_file > $merged_input_file`;
 
 	return ($merged_ip_file, $merged_input_file);
 }
