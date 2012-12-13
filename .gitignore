@@ -2,3 +2,10 @@
 static/*
 db/peakstogenes.db
 t/install_mm9.pl
+test*
+MDA-MB-231_H3K4me3_MCF7_PolII_Raw_Data_matrix_file.txt
+MDAL*
+batch*
+nohup.out
+List*
+db/peakstogenes.db-journal

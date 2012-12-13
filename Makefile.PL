@@ -7,7 +7,7 @@ WriteMakefile(
     NAME                => 'PeaksToGenes',
     AUTHOR              => q{Jason R. Dobson <dobson187@gmail.com>},
     VERSION_FROM        => 'lib/PeaksToGenes.pm',
-    ABSTRACT			=> 'Annotate ChIP-seq peak locations.',
+    ABSTRACT			=> 'Meta-genomic analysis of ChIP-seq datasets',
     ($ExtUtils::MakeMaker::VERSION >= 6.3002
       ? ('LICENSE'=> 'perl')
       : ()),
