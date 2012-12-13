@@ -84,9 +84,6 @@ sub index_signal_ratio {
 	unlink ($merged_ip_file);
 	unlink ($merged_input_file);
 
-	print Dumper $indexed_signal_ratios;
-	die "Done testing";
-
 	# Create an instance of PeaksToGenes::Annotate::Database and run the
 	# PeaksToGenes::Annotate::Database::parse_and_store subroutine to
 	# insert the information into the PeaksToGenes database
