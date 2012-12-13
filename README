@@ -10,12 +10,6 @@ This module has two non-Perl dependencies: BedTools, SQLite3, and MySQL.
 
 To install BedTools:
 
-	On Debian Linux:
-
-		sudo apt-get install bedtools
-
-	On OS X:
-
 		Get the source package for the BedTools:
 		<http://code.google.com/p/bedtools/downloads/list>
 
