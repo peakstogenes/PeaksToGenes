@@ -10,6 +10,15 @@ This module has two non-Perl dependencies: BedTools, SQLite3, and MySQL.
 
 To install BedTools:
 
+	BedTools should be compiled from source. The current package in the
+	apt-get repositories has been updated to function better.
+
+	* BedTools has a dependency on zlib. The 'make' command will fail
+	* if this is not installed. On OS X this can be installed from
+	* source <>http://www.zlib.net/
+	* On Ubuntu:
+		sudo apt-get install zlib1g-dev
+
 		Get the source package for the BedTools:
 		<http://code.google.com/p/bedtools/downloads/list>
 
