@@ -79,21 +79,6 @@ __PACKAGE__->add_unique_constraint("experiment_unique", ["experiment"]);
 
 =head1 RELATIONS
 
-=head2 downstream_annotations
-
-Type: has_many
-
-Related object: L<PeaksToGenes::Schema::Result::DownstreamAnnotation>
-
-=cut
-
-__PACKAGE__->has_many(
-  "downstream_annotations",
-  "PeaksToGenes::Schema::Result::DownstreamAnnotation",
-  { "foreign.name" => "self.id" },
-  { cascade_copy => 0, cascade_delete => 0 },
-);
-
 =head2 downstream_numbers_of_peaks
 
 Type: has_many
@@ -105,21 +90,6 @@ Related object: L<PeaksToGenes::Schema::Result::DownstreamNumberOfPeaks>
 __PACKAGE__->has_many(
   "downstream_numbers_of_peaks",
   "PeaksToGenes::Schema::Result::DownstreamNumberOfPeaks",
-  { "foreign.name" => "self.id" },
-  { cascade_copy => 0, cascade_delete => 0 },
-);
-
-=head2 gene_body_annotations
-
-Type: has_many
-
-Related object: L<PeaksToGenes::Schema::Result::GeneBodyAnnotation>
-
-=cut
-
-__PACKAGE__->has_many(
-  "gene_body_annotations",
-  "PeaksToGenes::Schema::Result::GeneBodyAnnotation",
   { "foreign.name" => "self.id" },
   { cascade_copy => 0, cascade_delete => 0 },
 );
@@ -154,21 +124,6 @@ __PACKAGE__->belongs_to(
   { is_deferrable => 1, on_delete => "CASCADE", on_update => "CASCADE" },
 );
 
-=head2 transcript_annotations
-
-Type: has_many
-
-Related object: L<PeaksToGenes::Schema::Result::TranscriptAnnotation>
-
-=cut
-
-__PACKAGE__->has_many(
-  "transcript_annotations",
-  "PeaksToGenes::Schema::Result::TranscriptAnnotation",
-  { "foreign.name" => "self.id" },
-  { cascade_copy => 0, cascade_delete => 0 },
-);
-
 =head2 transcript_numbers_of_peaks
 
 Type: has_many
@@ -180,21 +135,6 @@ Related object: L<PeaksToGenes::Schema::Result::TranscriptNumberOfPeaks>
 __PACKAGE__->has_many(
   "transcript_numbers_of_peaks",
   "PeaksToGenes::Schema::Result::TranscriptNumberOfPeaks",
-  { "foreign.name" => "self.id" },
-  { cascade_copy => 0, cascade_delete => 0 },
-);
-
-=head2 upstream_annotations
-
-Type: has_many
-
-Related object: L<PeaksToGenes::Schema::Result::UpstreamAnnotation>
-
-=cut
-
-__PACKAGE__->has_many(
-  "upstream_annotations",
-  "PeaksToGenes::Schema::Result::UpstreamAnnotation",
   { "foreign.name" => "self.id" },
   { cascade_copy => 0, cascade_delete => 0 },
 );
@@ -215,8 +155,8 @@ __PACKAGE__->has_many(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07025 @ 2012-10-05 21:56:09
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:gkV6ZsjBPS6CeMeiCB0/iQ
+# Created by DBIx::Class::Schema::Loader v0.07025 @ 2012-12-14 17:46:40
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:SHTWE7pdr1QNTea650+GYw
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration
