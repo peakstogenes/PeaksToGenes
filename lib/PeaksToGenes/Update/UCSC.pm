@@ -243,7 +243,7 @@ sub file_names {
 		$directory . $self->genome . "_Gene_Body_90_to_100.bed",
 	];
 	# Add the 1Kb iterative locations to the file strings Array Ref
-	for ( my $i = 1; $i <= 100; $i++ ) {
+	for ( my $i = 1; $i <= 10; $i++ ) {
 		unshift ( @$file_strings, $directory . $self->genome . "_$i" .
 			"Kb_Upstream.bed");
 		push ( @$file_strings, $directory . $self->genome . "_$i" .
@@ -333,7 +333,7 @@ sub empty_genomic_coordinates {
 			10	=>	[]
 		},
 	};
-	for (my $i = 0; $i < 100; $i++) {
+	for (my $i = 0; $i < 10; $i++) {
 		$genomic_coordinates->{'Upstream'}{$i} = [];
 		$genomic_coordinates->{'Downstream'}{$i} = [];
 	}
@@ -343,7 +343,7 @@ sub empty_genomic_coordinates {
 sub get_upstream_and_downstream_coordinates {
 	my ($self, $refseq, $chrom_sizes, $genomic_coordinates) = @_;
 	# Iterate through the iteration distances and create a file for each one
-	for ( my $i = 0; $i < 100; $i++ ) {
+	for ( my $i = 0; $i < 10; $i++ ) {
 		# Use the coordinates for the given accession and extend the
 		# coordinates based on the iterator extension values and within the
 		# bounds of the chromosome size. If the coordinates are valid, push
@@ -549,37 +549,37 @@ sub get_decile_coordinates {
 sub print_genomic_coordinates {
 	my ($self, $file_strings, $genomic_coordinates) = @_;
 	# Print the upstream and downstream coordinates to file
-	for (my $i = 0; $i < 100; $i++) {
-		open my $upstream_out, ">", $file_strings->[99-$i] or 
-		croak "Could not write to $file_strings->[99-$i] $! \n";
+	for (my $i = 0; $i < 10; $i++) {
+		open my $upstream_out, ">", $file_strings->[9-$i] or 
+		croak "Could not write to $file_strings->[9-$i] $! \n";
 		print $upstream_out join("\n",
 			@{$genomic_coordinates->{Upstream}{$i}});
-		open my $downstream_out, ">", $file_strings->[114+$i] or 
-		croak "Could not write to $file_strings->[114+$i] $! \n";
+		open my $downstream_out, ">", $file_strings->[24+$i] or 
+		croak "Could not write to $file_strings->[24+$i] $! \n";
 		print $downstream_out join("\n",
 			@{$genomic_coordinates->{Downstream}{$i}});
 	}
 	# Print the 5'-UTR, 3'-UTR, exons, and introns coordinates to file
-	open my $five_prime_utr_out, ">", $file_strings->[100] or 
-	croak "Could not write to $file_strings->[100] $! \n";
+	open my $five_prime_utr_out, ">", $file_strings->[10] or 
+	croak "Could not write to $file_strings->[10] $! \n";
 	print $five_prime_utr_out join("\n",
 		@{$genomic_coordinates->{five_prime_utr_coordinates}});
-	open my $three_prime_utr_out, ">", $file_strings->[103] or 
-	croak "Could not write to $file_strings->[103] $! \n";
+	open my $three_prime_utr_out, ">", $file_strings->[13] or 
+	croak "Could not write to $file_strings->[13] $! \n";
 	print $three_prime_utr_out join("\n",
 		@{$genomic_coordinates->{three_prime_utr_coordinates}});
-	open my $exons_out, ">", $file_strings->[101] or 
-	croak "Could not write to $file_strings->[101] $! \n";
+	open my $exons_out, ">", $file_strings->[11] or 
+	croak "Could not write to $file_strings->[11] $! \n";
 	print $exons_out join("\n",
 		@{$genomic_coordinates->{exon_coordinates}});
-	open my $introns_out, ">", $file_strings->[102] or 
-	croak "Could not write to $file_strings->[102] $! \n";
+	open my $introns_out, ">", $file_strings->[12] or 
+	croak "Could not write to $file_strings->[12] $! \n";
 	print $introns_out join("\n",
 		@{$genomic_coordinates->{intron_coordinates}});
 	# Print the decile coordinates to file
 	for (my $i = 1; $i <= 10; $i++) {
-		open my $decile_out, ">", $file_strings->[103+$i] or
-		croak "Could not write to $file_strings->[103+$i] $! \n";
+		open my $decile_out, ">", $file_strings->[13+$i] or
+		croak "Could not write to $file_strings->[13+$i] $! \n";
 		print $decile_out join("\n",
 			@{$genomic_coordinates->{decile_coordinates}{$i}});
 	}
