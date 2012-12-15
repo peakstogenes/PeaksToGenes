@@ -74,10 +74,9 @@ folloing:
 	3. Using an ordered Array Ref, calls instersectBed to intersect the
 	   user-defined intervals with the genomic index
 	4. Parses the intersected  regions:
-		a. Stores experimental interval coordinates, name, and score
-		b. Stores the number of experimental intervals per genomic
+		a. Stores the number of experimental intervals per genomic
 		   interval
-		c. Measures the length of each genomic interval, which was
+		b. Measures the length of each genomic interval, which was
 		   overlapped by an experimental interval
 	5. Normalize the number of experimental intervals by length of the
 	   genomic interval

@@ -21,7 +21,7 @@ Version 0.001
 
 This module provides most of the business logic for the PeaksToGenes
 program. Given a bed file of genomic intervals, and a list of index files,
-this module will annotate the locations of the summits relative to the
+this module will annotate the locations of the peaks relative to the
 transcriptional start site of each transcript.
 
 =head1 SUBROUTINES/METHODS
@@ -93,9 +93,14 @@ sub annotate_peaks {
 	# formatted.
 	$self->check_bed_file;
 
+	# Run the PeaksToGenes::Annotate::BedTools::merge_bed subroutine to
+	# merge any overlapping intervals into a temporary BED-format file for
+	# faster indexed with intersectBed
+	my $merged_bed_file = $self->merge_bed;
+
 	# Make a call to align_peaks to determine to overlap of peaks relative
 	# to RefSeq gene positions
-	my $indexed_peaks = $self->align_peaks;
+	my $indexed_peaks = $self->align_peaks($merged_bed_file);
 
 	# Return the indexed_peaks Hash Ref to the PeaksToGenes::Annotate
 	# controller module.
@@ -129,7 +134,7 @@ sub check_bed_file {
 		my $line = $_;
 		chomp ($line);
 		# Split the line by tab characters
-		my ($chr, $start, $stop, $name, $score, $rest_of_line) =
+		my ($chr, $start, $stop, $name, $rest_of_line) =
 		split(/\t/, $line);
 
 		# Test to make sure the chromosome defined in column 1 is a valid
@@ -181,26 +186,24 @@ sub check_bed_file {
 			"name in this column.\n\n";
 		}
 
-		# Test to make sure a score is defined in the fifth column and
-		# that it is a numerical value 
-		unless ($score && ($score >= 0 || $score <= 0)) {
-			croak "On line: $line_number you do not have a score entered ".
-			"for your peak/interval. If these intervals do not have " . 
-			"scores associated with them, please use the helper script " .
-			"to add a nominal score in the fifth column.\n\n" unless ( $score == 0 );
-		}
-
-		# Test to make sure there are no other tab-delimited fields in the
-		# file past the score in the fifth column.
-		if ($rest_of_line){
-			croak "On line: $line_number, you have extra tab-" . 
-			"delimited items after the fifth (score) column. Please " .
-			"use the helper script to trim these entries from your " .
-			"file.\n\n";
-		}
-
 		$line_number++;
 	}
+}
+
+sub merge_bed {
+	my $self = shift;
+
+	# Define a string to hold the temporary peaks file
+	my $merged_peaks_fh = "$FindBin::Bin/../temp_merged.bed";
+
+	# Copy the BED-format file into a scalar string
+	my $unmerged_peaks_file = $self->bed_file;
+
+	# Run mergeBed to merge the overlapping peak intervals
+	`mergeBed -n -i $unmerged_peaks_file > $merged_peaks_fh`;
+
+	# Return the file name to the main subroutine
+	return $merged_peaks_fh;
 }
 
 sub chromosome_sizes {
@@ -260,14 +263,10 @@ sub chromosome_sizes {
 }
 
 sub align_peaks {
-	my $self = shift;
+	my ($self, $summits_file) = @_;
 
 	# Copy the base regular expression into a scalar string.
 	my $base_regex = $self->base_regex;
-
-	# Copy the file string for the experimental intervals into a scalar
-	# string
-	my $summits_file = $self->bed_file;
 
 	# Pre-declare a Hash Ref to hold the intersected peaks information
 	my $indexed_peaks = {};
@@ -284,88 +283,11 @@ sub align_peaks {
 				$data_structure) = @_;
 
 			my $peak_number = $data_structure->{peak_number};
-			my $peak_info = $data_structure->{peak_info};
-			my $interval_size = $data_structure->{interval_size};
 
-			# Pre-declare a local Hash Ref to hold the interval size data
-			# for each genomic interval for which a user-defined
-			# interval/peak overlaps
-			my $interval_size_hash = {};
-
-			# Parse the information, and store it in the Hash Ref
-			foreach my $intersected_peak
-			(@{$data_structure->{intersected_peaks}}) {
-				chomp ($intersected_peak);
-
-				# Split the fields by the tab-delimiter. Because of the
-				# nature of the method here, the input file must be
-				# correctly formatted.
-				my ($summit_chr, $summit_start, $summit_end, $summit_name,
-					$summit_score, $index_chr, $index_start, $index_stop,
-					$index_gene, $overlap) = split(/\t/,
-					$intersected_peak);
-
-				# If an experimental interval has been found for this
-				# genomic interval, add to the number. If not, set the
-				# number to 1.
-				if ($indexed_peaks->{$index_gene}{$peak_number} ) {
-					$indexed_peaks->{$index_gene}{$peak_number}++;
-				} else {
-					$indexed_peaks->{$index_gene}{$peak_number} = 1;
-				}
-
-				# If an experimental interval has been found for this
-				# genomic interval, add to the string. If not, set the
-				# string equal to the experimental information
-				if ( $indexed_peaks->{$index_gene}{$peak_info} ) {
-					$indexed_peaks->{$index_gene}{$peak_info} .= 
-					' /// ' . join(":", $summit_chr, $summit_start,
-						$summit_end, $summit_name, $summit_score) . 
-					' /// ';
-				} else {
-					$indexed_peaks->{$index_gene}{$peak_info} = 
-					' /// ' . join(":", $summit_chr, $summit_start,
-						$summit_end, $summit_name, $summit_score) . 
-					' /// ';
-				}
-
-				# If an experimental interval has been found for this
-				# genomic interval, store the minimum and maximum
-				# index_start and index_stop to calculate the size of the
-				# interval
-				if (
-					$interval_size_hash->{$index_gene}{$interval_size}{min} ) {
-					if ( $index_start <
-						$interval_size_hash->{$index_gene}{$interval_size}{min}
-						) {
-							$interval_size_hash->{$index_gene}{$interval_size}{min}
-							= $index_start;
-						}
-				} else {
-					$interval_size_hash->{$index_gene}{$interval_size}{min}
-					= $index_start;
-				}
-				if (
-					$interval_size_hash->{$index_gene}{$interval_size}{max} ) {
-					if ( $index_stop >
-						$interval_size_hash->{$index_gene}{$interval_size}{max}
-						) {
-							$interval_size_hash->{$index_gene}{$interval_size}{max}
-							= $index_stop;
-						}
-				} else {
-					$interval_size_hash->{$index_gene}{$interval_size}{max}
-					= $index_stop;
-				}
-			}
-
-			# Iterate through the interval_size_hash and calculate the size
-			# of the interval
-			foreach my $index_gene ( keys $interval_size_hash ) {
-				$indexed_peaks->{$index_gene}{$interval_size} =
-				$interval_size_hash->{$index_gene}{$interval_size}{max} -
-				$interval_size_hash->{$index_gene}{$interval_size}{min} +
-				1;
+			foreach my $index_gene ( keys
+				%{$data_structure->{intersected_peaks}} ) {
+				$indexed_peaks->{$index_gene}{$peak_number} =
+				$data_structure->{intersected_peaks}{$index_gene};
 			}
 		}
 	);
@@ -392,8 +314,6 @@ sub align_peaks {
 			# peaks information, or the interval size for annotation into a
 			# scalar string so it is easier to store in the Hash Ref.
 			my $peak_number = $location . '_Number_of_Peaks';
-			my $peak_info = $location . '_Peaks_Information';
-			my $interval_size = $location . '_Interval_Size';
 
 			# Make a back ticks call to intersectBed with the -wo option so
 			# that the original entry for both the experimental intervals
@@ -401,14 +321,42 @@ sub align_peaks {
 			# where the experimental interval overlaps a genomic interval.
 			# The intersected interval lines will be stored in an array.
 			my @intersected_peaks = 
-			`intersectBed -wo -a $summits_file -b $index_file`;
+			`intersectBed -wo -a $index_file -b $summits_file`;
+
+			# Pre-declare a Hash Ref to hold the information for the peaks
+			my $peaks_hash_ref = {};
+
+			# Iterate through the intersected lines and parse the
+			# information, storing it in the peaks_hash_ref
+			foreach my $intersected_line ( @intersected_peaks ) {
+
+				chomp($intersected_line);
+
+				# Split the line by tab
+				my ($index_chr, $index_start, $index_stop, $index_gene,
+					$rest_of_line) = split(/\t/, $intersected_line);
+
+				# Calculate the size of the index interval
+				my $interval_size = $index_stop - $index_start + 1;
+
+				# Add the normalized (per Kb) number of peaks found to the
+				# peaks_hash_ref
+				if ( $peaks_hash_ref->{$index_gene} ) {
+					$peaks_hash_ref->{$index_gene} += ( 1 *
+						(1000/$interval_size)
+					);
+				} else {
+					$peaks_hash_ref->{$index_gene} = ( 1 *
+						(1000/$interval_size)
+					);
+				}
+
+			}
 
 			$pm->finish(0, 
 				{
-					intersected_peaks	=>	\@intersected_peaks,
+					intersected_peaks	=>	$peaks_hash_ref,
 					peak_number			=>	$peak_number,
-					peak_info			=>	$peak_info,
-					interval_size		=>	$interval_size,
 				}
 			);
 
@@ -420,6 +368,9 @@ sub align_peaks {
 	}
 
 	$pm->wait_all_children;
+
+	# Remove the temporary merged BED-format file
+	unlink $summits_file;
 
 	# Return the Hash Ref of experimental intervals annotated based on
 	# location relative to RefSeq transcripts to the main subroutine.

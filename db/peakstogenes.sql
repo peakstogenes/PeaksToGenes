@@ -14,7 +14,8 @@ CREATE TABLE chromosome_sizes (
 CREATE TABLE transcripts (
 	id INTEGER PRIMARY KEY AUTOINCREMENT,
 	genome_id INTEGER NOT NULL REFERENCES available_genomes(id) ON UPDATE CASCADE,
-	transcript TEXT NOT NULL
+	transcript TEXT NOT NULL,
+	UNIQUE (genome_id, transcript) ON CONFLICT REPLACE
 );
 CREATE TABLE experiments (
 	id INTEGER PRIMARY KEY AUTOINCREMENT,

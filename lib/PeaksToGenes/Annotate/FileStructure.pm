@@ -126,7 +126,7 @@ sub get_index_file_names {
 		push(@$genome_info,
 			$available_genomes_search_result->$location_string);
 	}
-	for ( my $i = 1; $i <= 100; $i++ ) {
+	for ( my $i = 1; $i <= 10; $i++ ) {
 		my $upstream_file = '_' . $i . 'kb_upstream_peaks_file';
 		my $downstream_file = '_' . $i . 'kb_downstream_peaks_file';
 		unshift(@$genome_info, $available_genomes_search_result->$upstream_file);

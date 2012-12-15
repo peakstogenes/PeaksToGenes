@@ -63,6 +63,22 @@ __PACKAGE__->add_columns(
 
 __PACKAGE__->set_primary_key("id");
 
+=head1 UNIQUE CONSTRAINTS
+
+=head2 C<genome_id_transcript_unique>
+
+=over 4
+
+=item * L</genome_id>
+
+=item * L</transcript>
+
+=back
+
+=cut
+
+__PACKAGE__->add_unique_constraint("genome_id_transcript_unique", ["genome_id", "transcript"]);
+
 =head1 RELATIONS
 
 =head2 genome
@@ -81,8 +97,8 @@ __PACKAGE__->belongs_to(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07025 @ 2012-10-28 20:01:22
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:W2iu0Uit29awbQKfu0nawg
+# Created by DBIx::Class::Schema::Loader v0.07025 @ 2012-12-14 19:56:32
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:noB/w4csLAC0t/LjoXXSFw
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration
