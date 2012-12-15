@@ -33,8 +33,8 @@ sub correlation_coefficient {
 		sub {
 			my ($pid, $exit_code, $ident, $exit_signal, $core_dump,
 				$data_structure) = @_;
-			$test_results->{$data_structure->{'genomic_region'}}{$data_structure->{'type'}}
-			= $data_structure->{'point_biserial'};
+			$test_results->{$data_structure->{'genomic_region'}} =
+			$data_structure->{'point_biserial'};
 		}
 	);
 
@@ -43,70 +43,63 @@ sub correlation_coefficient {
 	foreach my $genomic_region ( keys
 		%{$self->genomic_regions_structure->{'test_genes'}} )
 	{
-		foreach my $type ( keys
-			%{$self->genomic_regions_structure->{'test_genes'}{$genomic_region}}
-		) {
+		# Begin a new thread if there is one available
+		$pm->start and next;
 
-			# Begin a new thread if there is one available
-			$pm->start and next;
+		# Run the
+		# PeaksToGenes::Contrast::Stats::PointBiserialCorrelation::extract_mean_and_number
+		# subroutine to get the mean value and number of observations
+		# for both the test genes and the background genes
+		my ($test_mean, $test_number) =
+		$self->extract_mean_and_number($self->genomic_regions_structure->{'test_genes'}{$genomic_region}{number_of_peaks});
+		my ($background_mean, $background_number) =
+		$self->extract_mean_and_number($self->genomic_regions_structure->{'background_genes'}{$genomic_region}{number_of_peaks});
 
-			# Run the
-			# PeaksToGenes::Contrast::Stats::PointBiserialCorrelation::extract_mean_and_number
-			# subroutine to get the mean value and number of observations
-			# for both the test genes and the background genes
-			my ($test_mean, $test_number) =
-			$self->extract_mean_and_number($self->genomic_regions_structure->{'test_genes'}{$genomic_region}{$type});
-			my ($background_mean, $background_number) =
-			$self->extract_mean_and_number($self->genomic_regions_structure->{'background_genes'}{$genomic_region}{$type});
+		# If the number of values in either array is zero, end the
+		# thread storing 'undetermined' as the value for the point
+		# biserial correlation coefficient
+		if ( ! $test_number || ! $background_number ) {
+			$pm->finish(0, {
+					genomic_region	=>	$genomic_region,
+					point_biserial	=>	'undetermined',
+				}
+			);
+		} else {
 
-			# If the number of values in either array is zero, end the
-			# thread storing 'undetermined' as the value for the point
-			# biserial correlation coefficient
-			if ( ! $test_number || ! $background_number ) {
-				$pm->finish(0, {
-						genomic_region	=>	$genomic_region,
-						type			=>	$type,
-						point_biserial	=>	'undetermined',
-					}
-				);
-			} else {
+			# Determine the ratio of the total sample corresponding to the
+			# test genes, and the ratio of the total sample corresponding
+			# to the background genes
+			my $test_proportion = $test_number / ($test_number +
+				$background_number
+			);
+			my $background_proportion = $background_number / ($test_number +
+				$background_number
+			);
 
-				# Determine the ratio of the total sample corresponding to the
-				# test genes, and the ratio of the total sample corresponding
-				# to the background genes
-				my $test_proportion = $test_number / ($test_number +
-					$background_number
-				);
-				my $background_proportion = $background_number / ($test_number +
-					$background_number
-				);
+			# Calculate the standard deviation of all the observations
+			# using the
+			# PeaksToGenes::Contrast::Stats::PointBiserialCorrelation::standard_deviation
+			# subroutine
+			my $standard_deviation =
+			$self->standard_deviation($self->genomic_regions_structure->{'test_genes'}{$genomic_region}{number_of_peaks},
+				$self->genomic_regions_structure->{'background_genes'}{$genomic_region}{number_of_peaks}
+			);
 
-				# Calculate the standard deviation of all the observations
-				# using the
-				# PeaksToGenes::Contrast::Stats::PointBiserialCorrelation::standard_deviation
-				# subroutine
-				my $standard_deviation =
-				$self->standard_deviation($self->genomic_regions_structure->{'test_genes'}{$genomic_region}{$type},
-					$self->genomic_regions_structure->{'background_genes'}{$genomic_region}{$type}
-				);
+			# The point biserial correlation coefficient is calculate
+			# by dividing the difference between the mean values by the
+			# standard deviation, then multiplying this value by the
+			# square root of the product of the proportions
+			my $point_biserial_correlation_coefficient = (($test_mean -
+					$background_mean) / $standard_deviation ) * ( sqrt(
+					$test_proportion * $background_proportion )
+			);
 
-				# The point biserial correlation coefficient is calculate
-				# by dividing the difference between the mean values by the
-				# standard deviation, then multiplying this value by the
-				# square root of the product of the proportions
-				my $point_biserial_correlation_coefficient = (($test_mean -
-						$background_mean) / $standard_deviation ) * ( sqrt(
-						$test_proportion * $background_proportion )
-				);
-
-				$pm->finish(0, {
-						genomic_region	=>	$genomic_region,
-						type			=>	$type,
-						point_biserial	=>
-						$point_biserial_correlation_coefficient,
-					}
-				);
-			}
+			$pm->finish(0, {
+					genomic_region	=>	$genomic_region,
+					point_biserial	=>
+					$point_biserial_correlation_coefficient,
+				}
+			);
 		}
 	}
 

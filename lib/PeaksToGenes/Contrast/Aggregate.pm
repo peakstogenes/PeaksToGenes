@@ -19,59 +19,55 @@ has genomic_index	=>	(
 sub create_table {
 	my $self = shift;
 
-	# Pre-declare a Hash Ref to store the Array Ref tables for each data
+	# Pre-declare a Array Ref to store the Array Ref tables for each data
 	# type
-	my $hash_ref_of_aggregate_tables = {};
+	my $array_ref_of_aggregate_tables = [];
 
-	foreach my $table_type ( qw(number_of_peaks peaks_information) ) {
+	# Pre-declare Array Refs to hold the row data
+	my $header = ['Aggregate Source'];
+	my $test_genes = ['Test Genes Sum'];
+	my $test_genes_mean = ['Test Genes Mean'];
+	my $background_genes = ['Background Genes Sum'];
+	my $background_genes_mean = ['Background Genes Mean'];
 
-		# Pre-declare Array Refs to hold the row data
-		my $header = ['Aggregate Source'];
-		my $test_genes = ['Test Genes Sum'];
-		my $test_genes_mean = ['Test Genes Mean'];
-		my $background_genes = ['Background Genes Sum'];
-		my $background_genes_mean = ['Background Genes Mean'];
+	foreach my $genomic_location (@{$self->genomic_index}) {
 
-		foreach my $genomic_location (@{$self->genomic_index}) {
-
-			# Use the PeaksToGenes::Contrast::Aggregate::mean_and_sum
-			# subroutine to extract the mean and sum from both the
-			# background and test genes sets. Then add the values to the
-			# row data
-			my ($test_genes_sum, $test_genes_mean_val) = $self->mean_and_sum(
-				$self->genomic_regions_structure->{test_genes}{$genomic_location}{$table_type}
-			);
-			my ($background_genes_sum, $background_genes_mean_val) = $self->mean_and_sum(
-				$self->genomic_regions_structure->{background_genes}{$genomic_location}{$table_type}
-			);
-
-			push(@$test_genes, $test_genes_sum);
-			push(@$test_genes_mean, $test_genes_mean_val);
-			push(@$background_genes, $background_genes_sum);
-			push(@$background_genes_mean, $background_genes_mean_val);
-
-			# Copy the location into a temporary scalar, and remove the
-			# leading underscore before adding it to the header line
-			my $temp_header = $genomic_location;
-			$temp_header =~ s/^_//;
-			push(@$header, $temp_header);
-
-		}
-
-		# Add the row data to the main Array Ref in the Hash Ref
-		push(@{$hash_ref_of_aggregate_tables->{$table_type}},
-			join("\n",
-				join("\t", @$header),
-				join("\t", @$test_genes),
-				join("\t", @$background_genes),
-				join("\t", @$test_genes_mean),
-				join("\t", @$background_genes_mean),
-			)
+		# Use the PeaksToGenes::Contrast::Aggregate::mean_and_sum
+		# subroutine to extract the mean and sum from both the
+		# background and test genes sets. Then add the values to the
+		# row data
+		my ($test_genes_sum, $test_genes_mean_val) = $self->mean_and_sum(
+			$self->genomic_regions_structure->{test_genes}{$genomic_location}{number_of_peaks}
 		);
+		my ($background_genes_sum, $background_genes_mean_val) = $self->mean_and_sum(
+			$self->genomic_regions_structure->{background_genes}{$genomic_location}{number_of_peaks}
+		);
+
+		push(@$test_genes, $test_genes_sum);
+		push(@$test_genes_mean, $test_genes_mean_val);
+		push(@$background_genes, $background_genes_sum);
+		push(@$background_genes_mean, $background_genes_mean_val);
+
+		# Copy the location into a temporary scalar, and remove the
+		# leading underscore before adding it to the header line
+		my $temp_header = $genomic_location;
+		$temp_header =~ s/^_//;
+		push(@$header, $temp_header);
 
 	}
 
-	return $hash_ref_of_aggregate_tables;
+	# Add the row data to the main Array Ref in the Hash Ref
+	push(@$array_ref_of_aggregate_tables,
+		join("\n",
+			join("\t", @$header),
+			join("\t", @$test_genes),
+			join("\t", @$background_genes),
+			join("\t", @$test_genes_mean),
+			join("\t", @$background_genes_mean),
+		)
+	);
+
+	return $array_ref_of_aggregate_tables;
 }
 
 sub mean_and_sum {

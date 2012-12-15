@@ -334,7 +334,8 @@ sub align_peaks {
 
 				# Split the line by tab
 				my ($index_chr, $index_start, $index_stop, $index_gene,
-					$rest_of_line) = split(/\t/, $intersected_line);
+					$peaks_chr, $peaks_start, $peaks_stop,
+					$number_of_peaks, $overlap) = split(/\t/, $intersected_line);
 
 				# Calculate the size of the index interval
 				my $interval_size = $index_stop - $index_start + 1;
@@ -342,11 +343,11 @@ sub align_peaks {
 				# Add the normalized (per Kb) number of peaks found to the
 				# peaks_hash_ref
 				if ( $peaks_hash_ref->{$index_gene} ) {
-					$peaks_hash_ref->{$index_gene} += ( 1 *
+					$peaks_hash_ref->{$index_gene} += ( $number_of_peaks *
 						(1000/$interval_size)
 					);
 				} else {
-					$peaks_hash_ref->{$index_gene} = ( 1 *
+					$peaks_hash_ref->{$index_gene} = ( $number_of_peaks *
 						(1000/$interval_size)
 					);
 				}

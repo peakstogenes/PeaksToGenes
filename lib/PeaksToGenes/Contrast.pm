@@ -145,7 +145,8 @@ sub test_and_contrast {
 
 	print "\n\nThe following accessions in your background genes file were not" . 
 	" found in the PeaksToGenes database for the genome specified: \n\t" ,
-	join("\n\t", @$background_test_genes), "\n\n" if (@$background_test_genes);
+	join("\n\t", @$invalid_background_genes), "\n\n" if
+	(@$invalid_background_genes);
 
 	# Create an instance of PeaksToGenes::Contrast::GenomicRegions and run
 	# PeaksToGenes::Contrast::GenomicRegions::extract_genomic_regions to
@@ -199,7 +200,6 @@ sub test_and_contrast {
 		);
 
 		$parsed_array_refs = $parse_stats->parse_stats;
-
 	}
 
 	# Create a new instance of PeaksToGenes::Contrast::Aggregate to run the

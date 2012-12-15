@@ -34,10 +34,8 @@ sub seek_and_destroy {
 
 		# Loop through the tables, and delete the rows where the data
 		# corresponds to the table
-		foreach my $table (qw(UpstreamAnnotation UpstreamNumberOfPeaks
-			TranscriptAnnotation TranscriptNumberOfPeaks
-			GeneBodyAnnotation GeneBodyNumberOfPeaks
-			DownstreamAnnotation DownstreamNumberOfPeaks) ) {
+		foreach my $table (qw(UpstreamNumberOfPeaks TranscriptNumberOfPeaks
+			GeneBodyNumberOfPeaks DownstreamNumberOfPeaks) ) {
 			my $result_set = $self->schema->resultset($table)->search(
 				{
 					name	=>	$experiment_result_set->id

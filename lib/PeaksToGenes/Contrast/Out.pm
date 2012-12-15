@@ -22,21 +22,17 @@ sub print_tables {
 	# Iterate through the tables found in the parsed_array_refs Hash Ref,
 	# printing each to file based on the user-defined contrast_name
 	foreach my $table_type (keys %{$self->parsed_array_refs}) {
-		foreach my $data_type (keys
-			%{$self->parsed_array_refs->{$table_type}}) {
-			if ($self->parsed_array_refs->{$table_type}{$data_type}) {
+		if ($self->parsed_array_refs->{$table_type}) {
+			# Run the PeaksToGenes::Contrast::Out::file_name subroutine
+			# to generate a file name for the user's data
+			my $fh = $self->file_name($table_type, 'number_of_peaks');
 
-				# Run the PeaksToGenes::Contrast::Out::file_name subroutine
-				# to generate a file name for the user's data
-				my $fh = $self->file_name($table_type, $data_type);
-
-				# Write the table to file
-				open my $out, ">", $fh or croak "Could not write to $fh. Please make sure you have the proper permissions to write to this file and that it contains legal characters\n\n";
-				print $out join("\n",
-					@{$self->parsed_array_refs->{$table_type}{$data_type}}
-				);
-				close $out;
-			}
+			# Write the table to file
+			open my $out, ">", $fh or croak "Could not write to $fh. Please make sure you have the proper permissions to write to this file and that it contains legal characters\n\n";
+			print $out join("\n",
+				@{$self->parsed_array_refs->{$table_type}}
+			);
+			close $out;
 		}
 	}
 }
