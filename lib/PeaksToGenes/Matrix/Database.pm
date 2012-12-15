@@ -86,8 +86,8 @@ sub extract_from_database {
 	}
 	my $upstream_locations = [];
 	my $downstream_locations = [];
-	croak "\n\nYou must define the limits of the matrix as greater than or equal to 1 (Kb) and less than or equal to 100 (Kb).\n\n" 
-	unless ( $self->position_limit >= 1 && $self->position_limit <= 100 );
+	croak "\n\nYou must define the limits of the matrix as greater than or equal to 1 (Kb) and less than or equal to 10 (Kb).\n\n" 
+	unless ( $self->position_limit >= 1 && $self->position_limit <= 10 );
 	for ( my $i = 1; $i <= $self->position_limit; $i++ ) {
 		push(@$upstream_locations, '_' . $i .
 			'kb_upstream_number_of_peaks');
