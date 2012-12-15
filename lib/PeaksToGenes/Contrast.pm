@@ -139,6 +139,14 @@ sub test_and_contrast {
 	my ($valid_test_genes, $invalid_test_genes, $valid_background_genes,
 		$invalid_background_genes) = $genes->get_genes;
 
+	print "\n\nThe following accessions in your test genes file were not" . 
+	" found in the PeaksToGenes database for the genome specified: \n\t" ,
+	join("\n\t", @$invalid_test_genes), "\n\n" if (@$invalid_test_genes);
+
+	print "\n\nThe following accessions in your background genes file were not" . 
+	" found in the PeaksToGenes database for the genome specified: \n\t" ,
+	join("\n\t", @$background_test_genes), "\n\n" if (@$background_test_genes);
+
 	# Create an instance of PeaksToGenes::Contrast::GenomicRegions and run
 	# PeaksToGenes::Contrast::GenomicRegions::extract_genomic_regions to
 	# return a Hash Ref containing two Hash Refs (one for the test and one
