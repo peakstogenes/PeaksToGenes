@@ -71,8 +71,8 @@ sub index_signal_ratio {
 	# PeaksToGenes::SignalRatio::BedTools::annotate_signal_ratio to return
 	# a Hash Ref of genomic signal ratio data
 	my $bedtools = PeaksToGenes::SignalRatio::BedTools->new(
-		input_file		=>	$merged_ip_file,
-		ip_file			=>	$merged_input_file,
+		ip_file			=>	$merged_ip_file,
+		input_file		=>	$merged_input_file,
 		genome			=>	$self->genome,
 		genomic_index	=>	$genomic_index,
 		scaling_factor	=>	$self->scaling_factor,

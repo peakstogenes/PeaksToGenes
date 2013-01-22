@@ -81,21 +81,17 @@ sub annotate_signal_ratio {
 				$data_structure) = @_;
 
 			my $peak_number = $data_structure->{peak_number};
-			my $interval_size = $data_structure->{interval_size};
 
 			foreach my $index_gene ( keys %{$data_structure->{ip_peaks}} )
 			{
-				if (
-					$data_structure->{input_peaks}{$index_gene}{$peak_number}
-					) {
+				if ( $data_structure->{input_peaks}{$index_gene} ) {
 					$indexed_signal_ratios->{$index_gene}{$peak_number} =
-					$data_structure->{ip_peaks}{$index_gene}{$peak_number}
-					/
-					$data_structure->{input_peaks}{$index_gene}{$peak_number}
-					* $self->scaling_factor;
+					$data_structure->{ip_peaks}{$index_gene} /
+					$data_structure->{input_peaks}{$index_gene} *
+					$self->scaling_factor;
 				} else {
 					$indexed_signal_ratios->{$index_gene}{$peak_number} = 
-					$data_structure->{ip_peaks}{$index_gene}{$peak_number}
+					$data_structure->{ip_peaks}{$index_gene}
 					/ $self->scaling_factor;
 				}
 			}
@@ -123,127 +119,100 @@ sub annotate_signal_ratio {
 			# peaks information, or the interval size for annotation into a
 			# scalar string so it is easier to store in the Hash Ref.
 			my $peak_number = $location . '_Number_of_Peaks';
-			my $interval_size = $location . '_Interval_Size';
+
+			# Pre-declare a string to hold the results of the intersectBed
+			# calls for the IP channel
+			my $intersected_ip_fh = "IP_" . $peak_number . '.bed';
 
 			# Make a back ticks call to intersectBed with the -wo option so
 			# that the original entry for both the experimental intervals
 			# and the genomic intervals are returned for each instance
 			# where the experimental interval overlaps a genomic interval.
-			# The intersected interval lines will be stored in an array.
-			my @intersected_ip_peaks = 
-			`intersectBed -wo -a $ip_file -b $index_file`;
+			`intersectBed -wo -a $index_file -b $ip_file > $intersected_ip_fh`;
 
 			# Pre-declare a Hash Ref to hold the information for the IP
 			# peaks
 			my $ip_peaks_hash_ref = {};
 
-			# Pre-declare a Hash Ref to store the interval size values
-			my $interval_size_hash = {};
+			# Open the intersected IP file, and iterate through the lines,
+			# extracting the data and storing the 1Kb normalized number of
+			# reads in the ip_peaks_hash_ref
+			open my $ip_fh, "<", $intersected_ip_fh or 
+			croak "\n\nCould not read from $intersected_ip_fh $! \n\n";
+			while (<$ip_fh>) {
 
-			# Iterate through the intersected lines and parse the
-			# information storing it in the ip_peaks_hash_ref
-			foreach my $intersected_ip_line ( @intersected_ip_peaks ) {
+				my $intersected_ip_line = $_;
 
 				chomp ($intersected_ip_line);
 
 				# Split the line by tab
-				my ($ip_chr, $ip_start, $ip_end, $ip_number_reads,
-					$index_chr, $index_start, $index_stop, $index_gene,
+				my ($index_chr, $index_start, $index_stop, $accession,
+					$ip_chr, $ip_start, $ip_stop, $number_of_ip_reads,
 					$overlap) = split(/\t/, $intersected_ip_line);
 
-				# Store the number of IP reads per interval
-				if ( $ip_peaks_hash_ref->{$index_gene}{$peak_number} ) {
-					$ip_peaks_hash_ref->{$index_gene}{$peak_number} +=
-					$ip_number_reads;
-				} else {
-					$ip_peaks_hash_ref->{$index_gene}{$peak_number} =
-					$ip_number_reads;
-				}
+				# Calculate the size of the interval
+				my $ip_interval_size = $index_stop - $index_start + 1;
 
-				# If an experimental interval has been found for this
-				# genomic interval, store the minimum and maximum
-				# index_start and index_stop to calculate the size of the
-				# interval
-				if (
-					$interval_size_hash->{$index_gene}{$interval_size}{min} ) {
-					if ( $index_start <
-						$interval_size_hash->{$index_gene}{$interval_size}{min}
-						) {
-							$interval_size_hash->{$index_gene}{$interval_size}{min}
-							= $index_start;
-						}
+				# Store the number of IP reads per interval normalized by
+				# the size of the interval
+				if ( $ip_peaks_hash_ref->{$accession} ) {
+					$ip_peaks_hash_ref->{$accession} +=
+					($number_of_ip_reads * (1000 / $ip_interval_size));
 				} else {
-					$interval_size_hash->{$index_gene}{$interval_size}{min}
-					= $index_start;
+					$ip_peaks_hash_ref->{$accession} =
+					($number_of_ip_reads * (1000 / $ip_interval_size));
 				}
-				if (
-					$interval_size_hash->{$index_gene}{$interval_size}{max} ) {
-					if ( $index_stop >
-						$interval_size_hash->{$index_gene}{$interval_size}{max}
-						) {
-							$interval_size_hash->{$index_gene}{$interval_size}{max}
-							= $index_stop;
-						}
-				} else {
-					$interval_size_hash->{$index_gene}{$interval_size}{max}
-					= $index_stop;
-				}
-
 			}
+			close $ip_fh;
+			unlink $intersected_ip_fh;
 
-			# Iterate through the interval_size_hash, calculating the size
-			# of the intervals, and store the value in the
-			# ip_peaks_hash_ref.
-			foreach my $index_gene (keys %$interval_size_hash) {
-				$ip_peaks_hash_ref->{$index_gene}{$interval_size} =
-				$interval_size_hash->{$index_gene}{$interval_size}{max} -
-				$interval_size_hash->{$index_gene}{$interval_size}{min} +
-				1;
-			}
+			# Pre-declare a string to hold the results of the intersectBed
+			# calls for the IP channel
+			my $intersected_input_fh = "Input_" . $peak_number . '.bed';
 
-			# Delete the interval_size_hash
-			$interval_size_hash = {};
-
-			# Delete the intersected_ip_peaks
-			@intersected_ip_peaks = ();
-
-			my @intersected_input_peaks = 
-			`intersectBed -wo -a $input_file -b $index_file`;
+			`intersectBed -wo -a $index_file -b $input_file > $intersected_input_fh`;
 
 			# Pre-declare a Hash Ref to hold the information for the Input
 			# peaks
 			my $input_peaks_hash_ref = {};
 
-			# Iterate through the intersected lines and parse the
-			# information storing it in the input_peaks_hash_ref
-			foreach my $intersected_input_line ( @intersected_input_peaks ) {
+			# Open the intersected Input file, and iterate through the lines,
+			# extracting the data and storing the 1Kb normalized number of
+			# reads in the input_peaks_hash_ref
+			open my $input_fh, "<", $intersected_input_fh or 
+			croak "\n\nCould not read from $intersected_input_fh $! \n\n";
+			while (<$input_fh>) {
+				my $intersected_input_line = $_;
 
 				chomp ($intersected_input_line);
 
 				# Split the line by tab
-				my ($input_chr, $input_start, $input_end,
-					$input_number_reads, $index_chr, $index_start,
-					$index_stop, $index_gene, $overlap) = split(/\t/,
+				my ($index_chr, $index_start, $index_stop, $accession,
+					$input_chr, $input_start, $input_stop,
+					$number_of_input_reads, $overlap) = split(/\t/,
 					$intersected_input_line);
 
-				if ( $input_peaks_hash_ref->{$index_gene}{$peak_number} ) {
-					$input_peaks_hash_ref->{$index_gene}{$peak_number} +=
-					$input_number_reads;
+				# Calculate the size of the interval
+				my $input_interval_size = $index_stop - $index_start + 1;
+
+				if ( $input_peaks_hash_ref->{$accession} ) {
+					$input_peaks_hash_ref->{$accession} +=
+					($number_of_input_reads * (1000 / $input_interval_size));
 				} else {
-					$input_peaks_hash_ref->{$index_gene}{$peak_number} =
-					$input_number_reads;
+					$input_peaks_hash_ref->{$accession} =
+					($number_of_input_reads * (1000 / $input_interval_size));
 				}
 			}
+			close $input_fh;
+			unlink $intersected_input_fh;
 
 			$pm->finish(0, 
 				{
 					ip_peaks			=>	$ip_peaks_hash_ref,
 					input_peaks			=>	$input_peaks_hash_ref,
 					peak_number			=>	$peak_number,
-					interval_size		=>	$interval_size,
 				}
 			);
-
 		
 		} else {
 			croak "There was a problem determining the location of the " .

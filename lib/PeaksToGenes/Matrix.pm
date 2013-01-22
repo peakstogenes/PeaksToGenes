@@ -171,9 +171,8 @@ sub get_transcript_ids {
 				$transcript_ids_hash->{$transcript_id_result->id} =
 				$accession;
 			} else {
-				croak "\n\nOn line: $line_number, the accession $accession"
-				. " is not found for the genome defined. Please check your"
-				. " file before running.\n\n";
+				# Print the accessions to STDOUT
+				print "\t$accession\n";
 			}
 
 			$line_number++;
