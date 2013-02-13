@@ -27,8 +27,12 @@ sub create_table {
 	my $header = ['Aggregate Source'];
 	my $test_genes = ['Test Genes Sum'];
 	my $test_genes_mean = ['Test Genes Mean'];
+	my $test_genes_variance = ['Test Genes Variance'];
+	my $test_genes_sem = ['Test Genes SEM'];
 	my $background_genes = ['Background Genes Sum'];
 	my $background_genes_mean = ['Background Genes Mean'];
+	my $background_genes_variance = ['Background Genes Variance'];
+	my $background_genes_sem = ['Background Genes SEM'];
 
 	foreach my $genomic_location (@{$self->genomic_index}) {
 
@@ -86,6 +90,10 @@ sub mean_and_sum {
 	my $mean = $sum / $number;
 
 	return ($sum, $mean);
+}
+
+sub variance {
+	my $self = shift;
 }
 
 1;

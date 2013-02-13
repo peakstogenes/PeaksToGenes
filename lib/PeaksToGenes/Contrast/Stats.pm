@@ -6,6 +6,7 @@ use FindBin;
 use lib "$FindBin::Bin/../lib";
 use PeaksToGenes::Contrast::Stats::PointBiserialCorrelation;
 use PeaksToGenes::Contrast::Stats::ANOVA;
+use PeaksToGenes::Contrast::Stats::Wilcoxon;
 use Data::Dumper;
  
 has genomic_regions_structure	=>	(
@@ -32,20 +33,20 @@ sub run_statistical_tests {
 	# Pre-declare a Hash Ref to hold the results of the statistical tests
 	my $test_results = {};
 
-	# If the Wilcoxon Rank-Sum test has been flagged for testing, run the
-	# PeaksToGenes::Contrast::Stats::RankOrder::rank_order_genomic_regions
-	# subroutine to return a structure of rank ordered values for each
-	# data type at each relative genomic interval.
-	if ( $self->statistical_tests->{'kruskal_wallis'} ) {
+	# If the Wilcoxon (Mann-Whitney) test has been set to run, run the
+	# Wilcoxon Rank-Sum test by creating a
+	# PeaksToGenes::Contrast::Stats::Wilcoxon object and running the
+	# PeaksToGenes::Contrast::Stats::Wilcoxon::rank_sum_test subroutine
+	if ( $self->statistical_tests->{'wilcoxon'} ) {
 
-		my $kruskal_wallis = PeaksToGenes::Contrast::Stats::ANOVA->new(
+		my $wilcoxon = PeaksToGenes::Contrast::Stats::Wilcoxon->new(
 			genomic_regions_structure	=>
 			$self->genomic_regions_structure,
 			processors					=>	$self->processors,
 		);
 
-		$test_results->{kruskal_wallis} =
-		$kruskal_wallis->kruskal_wallis_anova;
+		$test_results->{wilcoxon} =
+		$wilcoxon->rank_sum_test;
 
 	}
 

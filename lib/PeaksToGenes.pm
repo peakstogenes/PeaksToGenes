@@ -122,6 +122,12 @@ has kruskal_wallis	=>	(
 	documentation	=>	'Contrast Mode only. Set this mode to run the Kruskal-Wallis nonparametric ANOVA test in contrast mode',
 );
 
+has wilcoxon	=>	(
+	is				=>	'ro',
+	isa				=>	'Bool',
+	documentation	=>	'Contrast Mode only. Set this mode to run the Wilcoxon (Mann-Whitney) nonparametric ANOVA test in contrast mode',
+);
+
 has biserial	=>	(
 	is				=>	'ro',
 	isa				=>	'Bool',
@@ -324,6 +330,7 @@ sub execute {
 				processors			=>	$self->processors,
 				statistical_tests	=>	{
 					anova			=>	$self->anova,
+					wilcoxon		=>	$self->wilcoxon,
 					kruskal_wallis	=>	$self->kruskal_wallis,
 					point_biserial	=>	$self->biserial
 				}
@@ -340,6 +347,7 @@ sub execute {
 				processors			=>	$self->processors,
 				statistical_tests	=>	{
 					anova			=>	$self->anova,
+					wilcoxon		=>	$self->wilcoxon,
 					kruskal_wallis	=>	$self->kruskal_wallis,
 					point_biserial	=>	$self->biserial
 				}
