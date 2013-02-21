@@ -1,21 +1,23 @@
 #!/usr/bin/perl
+
+
+# Copyright 2012, 2013 Jason R. Dobson <peakstogenes@gmail.com>
 #
-#===============================================================================
+# This file is part of peaksToGenes.
 #
-#         FILE: 000-all.t
+# peaksToGenes is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-#  DESCRIPTION: This Perl test script is designed to test the functions of
-#  				the PeaksToGenes program
+# peaksToGenes is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 #
-#        FILES: ---
-#         BUGS: ---
-#        NOTES: ---
-#       AUTHOR: Jason R. Dobson (JRD), dobson187@gmail.com
-# ORGANIZATION: 
-#      VERSION: 1.0
-#      CREATED: 10/11/2012 05:28:50 PM
-#     REVISION: ---
-#===============================================================================
+# You should have received a copy of the GNU General Public License
+# along with peaksToGenes.  If not, see <http://www.gnu.org/licenses/>.
+
 
 use strict;
 use warnings;
