@@ -106,7 +106,7 @@ sub annotate_signal_ratio {
 					$indexed_signal_ratios->{$index_gene}{$peak_number} =
 					$data_structure->{ip_peaks}{$index_gene} /
 					$data_structure->{input_peaks}{$index_gene} *
-					$self->scaling_factor;
+					( 1 / $self->scaling_factor );
 				} else {
 					$indexed_signal_ratios->{$index_gene}{$peak_number} = 
 					$data_structure->{ip_peaks}{$index_gene}

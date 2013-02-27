@@ -1,20 +1,3 @@
-package PeaksToGenes 0.001;
-use Moose;
-use Carp;
-use Moose::Util::TypeConstraints;
-use FindBin;
-use lib "$FindBin::Bin/../lib";
-use PeaksToGenes::Schema;
-use PeaksToGenes::Annotate;
-use PeaksToGenes::Update;
-use PeaksToGenes::Contrast;
-use PeaksToGenes::SignalRatio;
-use PeaksToGenes::Delete;
-use PeaksToGenes::List;
-use PeaksToGenes::Matrix;
-use File::Which;
-use Data::Dumper;
-
 # Copyright 2012, 2013 Jason R. Dobson <peakstogenes@gmail.com>
 #
 # This file is part of peaksToGenes.
@@ -32,8 +15,6 @@ use Data::Dumper;
 # You should have received a copy of the GNU General Public License
 # along with peaksToGenes.  If not, see <http://www.gnu.org/licenses/>.
 
-with 'MooseX::Getopt';
-
 =head1 NAME
 
 PeaksToGenes
@@ -44,9 +25,32 @@ Version 0.001
 
 =cut
 
+package PeaksToGenes 0.001;
+use Moose;
+use Carp;
+use Moose::Util::TypeConstraints;
+use FindBin;
+use lib "$FindBin::Bin/../lib";
+use PeaksToGenes::Schema;
+use PeaksToGenes::Annotate;
+use PeaksToGenes::Update;
+use PeaksToGenes::Contrast;
+use PeaksToGenes::SignalRatio;
+use PeaksToGenes::Delete;
+use PeaksToGenes::List;
+use PeaksToGenes::Matrix;
+use File::Which;
+use Data::Dumper;
+
+with 'MooseX::Getopt';
+
 =head1 SYNOPSIS
 
 This is the base module for PeaksToGenes.
+
+Included in the main function of this module are several safety catches to
+ensure that proper input has been declared by the user prior to execution
+of peaksToGenes functions.
 
 This module is not designed to be directly accessed by a Perl script,
 but rather it should be accessed through the helper Perl script included
@@ -131,12 +135,6 @@ has anova	=>	(
 	is				=>	'ro',
 	isa				=>	'Bool',
 	documentation	=>	'Contrast Mode only. Set this mode to run the ANOVA test in contrast mode',
-);
-
-has kruskal_wallis	=>	(
-	is				=>	'ro',
-	isa				=>	'Bool',
-	documentation	=>	'Contrast Mode only. Set this mode to run the Kruskal-Wallis nonparametric ANOVA test in contrast mode',
 );
 
 has wilcoxon	=>	(
@@ -254,15 +252,13 @@ This is the main subroutine that is executed. It makes calls to subclasses
 to process the summits into their respective locations, and then store the
 information in an SQLite3 database.
 
+Options passed to the execute subroutine come from the bin/peaksToGenes.pl
+script using MooseX::Getopt.
 
 =cut
 
 sub execute {
 	my $self = shift;
-
-	# Run PeaksToGenes::_check_executables to be sure that the required
-	# external dependencies can be found and run by PeaksToGenes
-	$self->_check_executables;
 
 	# Determine the how the program will be run
 	if ( $self->_check_modes > 1 ) {
@@ -312,7 +308,7 @@ sub execute {
 
 	} elsif ( $self->annotate ) {
 
-		# Run in annotate mode
+		# Run in annotate mode for peak intervals files
 
 		# Create an instance of PeaksToGenes::Annotate and run
 		# PeaksToGenes::Annotate::annotate to create a meta-gene profile of
@@ -332,10 +328,11 @@ sub execute {
 
 		# Run in contrast mode
 
-		print "\n\nRunning in contrast mode...\n\n";
-
-		# Create an instance of PeaksToGenes::Contrast and run the
-		# PeaksToGenes::Contrast::test_and_contrast subroutine
+		# Create an instance of PeaksToGenes::Contrast and run
+		# PeaksToGenes::Contrast::test_and_contrast to execute the
+		# statistical testing defined by the user. Depending on whether the
+		# user has specified a background gene list, this option will be
+		# specified when creating the PeaksToGenes::Contrast object.
 		if ( $self->background_genes ) {
 			my $contrast = PeaksToGenes::Contrast->new(
 				schema				=>	$self->schema,
@@ -374,7 +371,7 @@ sub execute {
 		}
 	} elsif ( $self->signal_ratio ) {
 
-		# Run in signal_ratio mode
+		# Run in signal_ratio mode for BED-format reads files
 
 		# Create an instance of PeaksToGenes::SignalRatio and run the
 		# PeaksToGenes::SignalRatio::create_bed_file subroutine to check
@@ -415,22 +412,12 @@ sub execute {
 	}
 }
 
-sub _check_executables {
-	my $self = shift;
+=head2 _check_modes
 
-	# Check to make sure that MySQL, SQLite and intersectBed are installed
-	# and are found in the $PATH. If they are not, kill the program and
-	# inform the user.
-	my $intersectbed_path = which('intersectBed');
-	croak 'BedTools is either not installed, or is not found in the $PATH' 
-		unless ( -X -x $intersectbed_path );
-	my $sqlite_path = which('sqlite3');
-	croak 'SQLite3 is either not installed or is not found in the $PATH'
-		unless (-X -x $sqlite_path);
-	my $mysql_path = which('mysql');
-	croak 'MySQL is either not installed or is not found in the $PATH'
-		unless (-X -x $mysql_path);
-}
+The private _check_modes subroutine is designed to make sure that the user
+has not defined more than one running mode.
+
+=cut
 
 sub _check_modes {
 	my $self = shift;
@@ -468,49 +455,17 @@ sub _check_modes {
 
 =head1 AUTHOR
 
-Jason R. Dobson, C<< <dobson187 at gmail.com> >>
+Jason R. Dobson, peakstogenes@gmail.com
 
 =head1 BUGS
 
-Please report any bugs or feature requests to C<bug-peakstogenes at rt.cpan.org>, or through
-the web interface at L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=PeaksToGenes>.  I will be notified, and then you'll
-automatically be notified of progress on your bug as I make changes.
-
-
-
+Please report any bugs to peakstogenes@gmail.com.
 
 =head1 SUPPORT
 
 You can find documentation for this module with the perldoc command.
 
     perldoc PeaksToGenes
-
-
-You can also look for information at:
-
-=over 4
-
-=item * RT: CPAN's request tracker (report bugs here)
-
-L<http://rt.cpan.org/NoAuth/Bugs.html?Dist=PeaksToGenes>
-
-=item * AnnoCPAN: Annotated CPAN documentation
-
-L<http://annocpan.org/dist/PeaksToGenes>
-
-=item * CPAN Ratings
-
-L<http://cpanratings.perl.org/d/PeaksToGenes>
-
-=item * Search CPAN
-
-L<http://search.cpan.org/dist/PeaksToGenes/>
-
-=back
-
-
-=head1 ACKNOWLEDGEMENTS
-
 
 =head1 LICENSE AND COPYRIGHT
 

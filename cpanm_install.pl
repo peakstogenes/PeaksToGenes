@@ -39,12 +39,18 @@ my $packages_to_install = [
 	'Statistics::ANOVA',
 	'Statistics::Test::WilcoxonRankSum',
 	'Statistics::Zed',
+	'Test::More',
 ];
 
 # Install the packages using cpanminus
 foreach my $package (@$packages_to_install) {
 	`cpanm $package`;
 }
+
+use Test::More;
+
 foreach my $package (@$packages_to_install) {
-	`cpanm $package`;
+	require_ok($package);
 }
+
+done_testing();
