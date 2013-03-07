@@ -69,8 +69,8 @@ sub file_name {
 		$fh .= '_ANOVA_test_of_';
 	} elsif ( $table_type eq 'point_biserial' ) {
 		$fh .= '_point_biserial_test_of_';
-	} elsif ( $table_type eq 'kruskal_wallis' ) {
-		$fh .= '_kruskal_wallis_rank_order_test_of_';
+	} elsif ( $table_type eq 'wilcoxon' ) {
+		$fh .= '_wilcoxon_rank_order_test_of_';
 	} elsif ( $table_type eq 'aggregate' ) {
 		$fh .= '_sum_and_mean_values_of_';
 	} else {

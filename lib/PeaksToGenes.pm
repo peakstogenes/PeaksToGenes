@@ -345,7 +345,6 @@ sub execute {
 				statistical_tests	=>	{
 					anova			=>	$self->anova,
 					wilcoxon		=>	$self->wilcoxon,
-					kruskal_wallis	=>	$self->kruskal_wallis,
 					point_biserial	=>	$self->biserial
 				}
 			);
@@ -362,7 +361,6 @@ sub execute {
 				statistical_tests	=>	{
 					anova			=>	$self->anova,
 					wilcoxon		=>	$self->wilcoxon,
-					kruskal_wallis	=>	$self->kruskal_wallis,
 					point_biserial	=>	$self->biserial
 				}
 			);

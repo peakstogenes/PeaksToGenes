@@ -50,9 +50,9 @@ sub parse_stats {
 	# the cognate parsing subroutine to parse the contents of the test
 	# results
 	
-	$parsed_array_refs->{'kruskal_wallis'} =
-	$self->parse_kruskal_wallis($self->stats_results->{kruskal_wallis}) if
-	($self->stats_results->{kruskal_wallis});
+	$parsed_array_refs->{'wilcoxon'} =
+	$self->parse_wilcoxon($self->stats_results->{wilcoxon}) if
+	($self->stats_results->{wilcoxon});
 	
 	$parsed_array_refs->{point_biserial} =
 	$self->parse_point_biserial($self->stats_results->{point_biserial}) if
@@ -73,15 +73,15 @@ sub lowercase_keys {
 	}
 }
 
-sub parse_kruskal_wallis {
+sub parse_wilcoxon {
 	my ($self, $results) = @_;
 
 	# Pre-declare an Array Ref to hold the Array Ref tables
-	my $kruskal_wallis_array_ref_of_tables = [];
+	my $wilcoxon_array_ref_of_tables = [];
 
 	# Pre-declare an Array Ref for each row
 	my $header = ['Result Type' ];
-	my $kruskal_wallis_h = ['Kruskal-Wallis H statistic'];
+	my $wilcoxon_z_score = ['Wilcoxon Z-score'];
 	my $p_value = ['p-value'];
 
 	foreach my $genomic_location (@{$self->genomic_index}) {
@@ -93,28 +93,25 @@ sub parse_kruskal_wallis {
 
 		push(@$header, $temp_genomic_location);
 
-		# Parse the string contained in the Kruskal-Wallis result
-		my ($h_string, $p_string) = split(/, /,
-			$results->{$genomic_location}
+		# Add the p-value
+		push(@$p_value, $results->{$genomic_location}{p_value});
+
+		# Add the Z-score
+		push(@$wilcoxon_z_score,
+			$results->{$genomic_location}{probability_normal_approx}{z}
 		);
-
-		my ($h_leader, $h_value) = split(/ = /, $h_string);
-		my ($p_leader, $p_val) = split(/ = /, $p_string);
-
-		push(@$kruskal_wallis_h, $h_value);
-		push(@$p_value, $p_val);
 	}
 
 	# Add the row data to the Array Ref in the main Hash Ref
-	push(@$kruskal_wallis_array_ref_of_tables,
+	push(@$wilcoxon_array_ref_of_tables,
 		join("\n",
 			join("\t", @$header),
-			join("\t", @$kruskal_wallis_h),
+			join("\t", @$wilcoxon_z_score),
 			join("\t", @$p_value),
 		)
 	);
 
-	return $kruskal_wallis_array_ref_of_tables;
+	return $wilcoxon_array_ref_of_tables;
 }
 
 sub parse_point_biserial {

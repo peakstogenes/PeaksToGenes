@@ -20,6 +20,7 @@ package PeaksToGenes::Contrast::Aggregate 0.001;
 
 use Moose;
 use Carp;
+use List::Util qw(sum);
 use Data::Dumper;
 
 has genomic_regions_structure	=>	(
@@ -45,12 +46,10 @@ sub create_table {
 	my $header = ['Aggregate Source'];
 	my $test_genes = ['Test Genes Sum'];
 	my $test_genes_mean = ['Test Genes Mean'];
-	my $test_genes_variance = ['Test Genes Variance'];
-	my $test_genes_sem = ['Test Genes SEM'];
+	my $test_genes_sems = ['Test Genes SEM'];
 	my $background_genes = ['Background Genes Sum'];
 	my $background_genes_mean = ['Background Genes Mean'];
-	my $background_genes_variance = ['Background Genes Variance'];
-	my $background_genes_sem = ['Background Genes SEM'];
+	my $background_genes_sems = ['Background Genes SEM'];
 
 	foreach my $genomic_location (@{$self->genomic_index}) {
 
@@ -64,11 +63,21 @@ sub create_table {
 		my ($background_genes_sum, $background_genes_mean_val) = $self->mean_and_sum(
 			$self->genomic_regions_structure->{background_genes}{$genomic_location}{number_of_peaks}
 		);
+		my $test_genes_sem = $self->sem(
+			$self->genomic_regions_structure->{test_genes}{$genomic_location}{number_of_peaks},
+			$test_genes_mean_val
+		);
+		my $background_genes_sem = $self->sem(
+			$self->genomic_regions_structure->{background_genes}{$genomic_location}{number_of_peaks},
+			$background_genes_mean_val
+		);
 
 		push(@$test_genes, $test_genes_sum);
 		push(@$test_genes_mean, $test_genes_mean_val);
+		push(@$test_genes_sems, $test_genes_sem);
 		push(@$background_genes, $background_genes_sum);
 		push(@$background_genes_mean, $background_genes_mean_val);
+		push(@$background_genes_sems, $background_genes_sem);
 
 		# Copy the location into a temporary scalar, and remove the
 		# leading underscore before adding it to the header line
@@ -86,6 +95,8 @@ sub create_table {
 			join("\t", @$background_genes),
 			join("\t", @$test_genes_mean),
 			join("\t", @$background_genes_mean),
+			join("\t", @$test_genes_sems),
+			join("\t", @$background_genes_sems),
 		)
 	);
 
@@ -95,23 +106,24 @@ sub create_table {
 sub mean_and_sum {
 	my ($self, $array) = @_;
 
-	# Pre-define scalar integer values for the sum of and the number of
-	# observations in the array
-	my $number = 0;
-	my $sum = 0;
-
-	foreach my $value (@$array) {
-		$number++;
-		$sum += $value;
-	}
-	
-	my $mean = $sum / $number;
-
-	return ($sum, $mean);
+	return ( sum(@$array), (sum(@$array) / @$array));
 }
 
-sub variance {
-	my $self = shift;
+sub sem {
+	my ($self, $array, $mean) = @_;
+
+	# Pre-declare an Array Ref to hold the squared differences.
+	my $squared_differences = [];
+
+	foreach my $value ( @$array ) {
+		push(@$squared_differences,
+			( $value ** 2 ) - ( $mean ** 2 )
+		);
+	}
+
+	my $stdev = sqrt (sum(@$squared_differences) / @$squared_differences);
+
+	return ( $stdev / sqrt(@$array) );
 }
 
 1;
