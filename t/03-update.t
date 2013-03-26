@@ -22,7 +22,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 222;                      # last test to print
+use Test::More;                      # last test to print
 
 use FindBin;
 use lib "$FindBin::Bin/../lib";
@@ -32,14 +32,17 @@ use PeaksToGenes::Update::UCSC;
 use Data::Dumper;
 
 BEGIN {
+
 	# Make a call to the external Perl script to reset the database
 	`$FindBin::Bin/../install_database.pl`;
+
 	# Create an instance of PeaksToGenes and run the PeaksToGenes::schema
 	# function to return a PeaksToGenes::Schema object
 	my $peaks_to_genes = PeaksToGenes->new(
 		genome	=>	'hg19',
 	);
 	my $schema = $peaks_to_genes->schema;
+
 	# Create a PeaksToGenes::Update object and test to make sure it has
 	# been created correctly.
 	my $test_update = PeaksToGenes::Update->new(
@@ -47,19 +50,23 @@ BEGIN {
 		schema	=>	$schema,
 	);
 	isa_ok($test_update, 'PeaksToGenes::Update');
+
 	# Create an instance of PeaksToGenes::Update::UCSC and run the
 	# PeaksToGenes::Update::UCSC::fetch_tables function to return a list of
 	# index file names
 	my $ucsc_update = PeaksToGenes::Update::UCSC->new(
 		genome	=>	'hg19',
 	);
-	my $base_files = $ucsc_update->fetch_tables;
+	my ($base_files, $chromosome_sizes_fh) = $ucsc_update->fetch_tables;
+
 	# Test to make sure $test_update can run the create_statement function
 	can_ok($test_update, 'create_statement');
+
 	# Test to make sure PeaksToGenes::Update::create_statement returns a
 	# correctly formatted insert statement
 	my $available_genomes_insert =
 	$test_update->create_statement($base_files);
+
 	# Define a Hash Ref to store the names of valid columns in the
 	# AvailableGenomes table
 	my $valid_columns = {
@@ -279,31 +286,53 @@ BEGIN {
 		'_99kb_downstream_peaks_file'	=>	1,
 		'_100kb_downstream_peaks_file'	=>	1,
 	};
-	foreach my $column (keys %{$available_genomes_insert->[0]}) {
-		cmp_ok($valid_columns->{$column}, '==', 1, 'The column is valid')
+	foreach my $column (keys %{$available_genomes_insert}) {
+		cmp_ok($valid_columns->{$column}, '==', 1, 
+			'The column is valid')
 		|| print "$column is not valid\n";
 	}
+
 	# Test to make sure the database is empty
 	cmp_ok($schema->resultset('AvailableGenome')->all, '==', 0, 'The database is empty');
+
 	# Test to make sure the test_update object can perform the
 	# PeaksToGenes::Update::update_database function
 	can_ok($test_update, 'update_database');
-	$test_update->update_database($available_genomes_insert);
+
+	$test_update->update_database($available_genomes_insert,
+		$chromosome_sizes_fh);
 	# Test to make sure a line has been added to the database.
 	cmp_ok($schema->resultset('AvailableGenome')->all, '==', 1, 'The database has been updated');
+
+	# Test to make sure that the chromosome sizes file has been added
+	my $chromosome_sizes_database_fh =
+	$schema->resultset('ChromosomeSize')->find(
+		{
+			genome_id	=>	1
+		}
+	)->chromosome_sizes_file;
+	ok( -r $chromosome_sizes_database_fh, 
+		'The file entered in the database for the chromosome sizes is readable');
+
 	# Reset the database again
 	`$FindBin::Bin/../install_database.pl`;
+
 	# Create a new instance of PeaksToGenes::Update in order to test the
 	# PeaksToGenes::Update::update function
 	my $full_update = PeaksToGenes::Update->new(
 		genome	=>	'mm9',
 		schema	=>	$schema,
 	);
+
 	# Test to make sure the database is empty
 	cmp_ok($schema->resultset('AvailableGenome')->all, '==', 0, 'The database is empty');
 	$full_update->update;
+
 	# Test to make sure a line has been added to the database.
 	cmp_ok($schema->resultset('AvailableGenome')->all, '==', 1, 'The database has been updated');
+
 	# Reset the database
 	`$FindBin::Bin/../install_database.pl`;
 }
+
+done_testing;

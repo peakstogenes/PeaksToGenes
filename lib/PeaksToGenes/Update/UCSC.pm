@@ -1,7 +1,26 @@
+
+# Copyright 2012, 2013 Jason R. Dobson <peakstogenes@gmail.com>
+#
+# This file is part of peaksToGenes.
+#
+# peaksToGenes is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# peaksToGenes is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with peaksToGenes.  If not, see <http://www.gnu.org/licenses/>.
+
 package PeaksToGenes::Update::UCSC 0.001;
 use Moose;
 use Carp;
 use FindBin;
+use lib "$FindBin::Bin/../lib";
 use PeaksToGenes::UCSC;
 use Data::Dumper;
 
@@ -151,11 +170,21 @@ module, otherwise it will return an Array Ref of file names.
 sub fetch_tables {
 	my $self = shift;
 
+	# Check to make sure that the genome defined by the user is a valid
+	# RefSeq genome
+	unless ( $self->genome_info->{$self->genome} ) {
+		croak "\n\nThe genome you have entered: " .
+		$self->genome . " is not a valid RefSeq genome. Please check to make sure you have entered it correctly.\n\n";
+	}
+
 	# Use the file_names subroutine to create a folder in the static
 	# directory for the genome to be updated. This will also delete any
 	# existing folder. The file names are returned in the form of an Array
 	# Ref
 	my $file_strings = $self->file_names;
+
+	# Write the chromosome sizes to file 
+	my $chromosome_sizes_fh = $self->write_chromosome_sizes;
 
 	# Use the get_gene_body_coordinates subroutine to interact with the
 	# UCSC MySQL server and return the gene coordinates in the form of a
@@ -197,7 +226,7 @@ sub fetch_tables {
 	# Make a call to the print_genomic_coordinates subroutine to print the
 	# coordinates to BED-format files in the static directory
 	$self->print_genomic_coordinates($file_strings, $genomic_coordinates);
-	return $file_strings;
+	return ($file_strings, $chromosome_sizes_fh);
 }
 
 sub file_names {
@@ -232,13 +261,41 @@ sub file_names {
 		$directory . $self->genome . "_Gene_Body_90_to_100.bed",
 	];
 	# Add the 1Kb iterative locations to the file strings Array Ref
-	for ( my $i = 1; $i <= 100; $i++ ) {
+	for ( my $i = 1; $i <= 10; $i++ ) {
 		unshift ( @$file_strings, $directory . $self->genome . "_$i" .
 			"Kb_Upstream.bed");
 		push ( @$file_strings, $directory . $self->genome . "_$i" .
 			"Kb_Downstream.bed");
 	}
 	return $file_strings;
+}
+
+sub write_chromosome_sizes {
+	my $self = shift;
+
+	my $directory = "$FindBin::Bin/../static/" . $self->genome .
+	"_Index/chromosome_sizes_file";
+	# Make a directory to store the chromosome sizes file if it does not
+	# already exist
+	if (! -d $directory ) {
+		`mkdir -p $directory`;
+	}
+
+	# Convert the chromosome sizes information into an Array Ref for easier
+	# printing
+	my $chromsome_sizes_array = [];
+	foreach my $chr (keys %{$self->chromosome_sizes}) {
+		push(@$chromsome_sizes_array, join("\t", $chr,
+				$self->chromosome_sizes->{$chr})
+		);
+	}
+
+	# Write the chromosome sizes to file
+	my $fh = $directory . '/' . $self->genome . '_chromosome_sizes_file';
+	open my $chr_size_file, ">", $fh or croak "Could not write to chromosome sizes file $fh. Please check that you have proper permissions for this location $!\n";
+	print $chr_size_file join("\n", @$chromsome_sizes_array);
+
+	return $fh;
 }
 
 sub get_gene_body_coordinates {
@@ -294,7 +351,7 @@ sub empty_genomic_coordinates {
 			10	=>	[]
 		},
 	};
-	for (my $i = 0; $i < 100; $i++) {
+	for (my $i = 0; $i < 10; $i++) {
 		$genomic_coordinates->{'Upstream'}{$i} = [];
 		$genomic_coordinates->{'Downstream'}{$i} = [];
 	}
@@ -304,7 +361,7 @@ sub empty_genomic_coordinates {
 sub get_upstream_and_downstream_coordinates {
 	my ($self, $refseq, $chrom_sizes, $genomic_coordinates) = @_;
 	# Iterate through the iteration distances and create a file for each one
-	for ( my $i = 0; $i < 100; $i++ ) {
+	for ( my $i = 0; $i < 10; $i++ ) {
 		# Use the coordinates for the given accession and extend the
 		# coordinates based on the iterator extension values and within the
 		# bounds of the chromosome size. If the coordinates are valid, push
@@ -510,37 +567,37 @@ sub get_decile_coordinates {
 sub print_genomic_coordinates {
 	my ($self, $file_strings, $genomic_coordinates) = @_;
 	# Print the upstream and downstream coordinates to file
-	for (my $i = 0; $i < 100; $i++) {
-		open my $upstream_out, ">", $file_strings->[99-$i] or 
-		croak "Could not write to $file_strings->[99-$i] $! \n";
+	for (my $i = 0; $i < 10; $i++) {
+		open my $upstream_out, ">", $file_strings->[9-$i] or 
+		croak "Could not write to $file_strings->[9-$i] $! \n";
 		print $upstream_out join("\n",
 			@{$genomic_coordinates->{Upstream}{$i}});
-		open my $downstream_out, ">", $file_strings->[114+$i] or 
-		croak "Could not write to $file_strings->[114+$i] $! \n";
+		open my $downstream_out, ">", $file_strings->[24+$i] or 
+		croak "Could not write to $file_strings->[24+$i] $! \n";
 		print $downstream_out join("\n",
 			@{$genomic_coordinates->{Downstream}{$i}});
 	}
 	# Print the 5'-UTR, 3'-UTR, exons, and introns coordinates to file
-	open my $five_prime_utr_out, ">", $file_strings->[100] or 
-	croak "Could not write to $file_strings->[100] $! \n";
+	open my $five_prime_utr_out, ">", $file_strings->[10] or 
+	croak "Could not write to $file_strings->[10] $! \n";
 	print $five_prime_utr_out join("\n",
 		@{$genomic_coordinates->{five_prime_utr_coordinates}});
-	open my $three_prime_utr_out, ">", $file_strings->[103] or 
-	croak "Could not write to $file_strings->[103] $! \n";
+	open my $three_prime_utr_out, ">", $file_strings->[13] or 
+	croak "Could not write to $file_strings->[13] $! \n";
 	print $three_prime_utr_out join("\n",
 		@{$genomic_coordinates->{three_prime_utr_coordinates}});
-	open my $exons_out, ">", $file_strings->[101] or 
-	croak "Could not write to $file_strings->[101] $! \n";
+	open my $exons_out, ">", $file_strings->[11] or 
+	croak "Could not write to $file_strings->[11] $! \n";
 	print $exons_out join("\n",
 		@{$genomic_coordinates->{exon_coordinates}});
-	open my $introns_out, ">", $file_strings->[102] or 
-	croak "Could not write to $file_strings->[102] $! \n";
+	open my $introns_out, ">", $file_strings->[12] or 
+	croak "Could not write to $file_strings->[12] $! \n";
 	print $introns_out join("\n",
 		@{$genomic_coordinates->{intron_coordinates}});
 	# Print the decile coordinates to file
 	for (my $i = 1; $i <= 10; $i++) {
-		open my $decile_out, ">", $file_strings->[103+$i] or
-		croak "Could not write to $file_strings->[103+$i] $! \n";
+		open my $decile_out, ">", $file_strings->[13+$i] or
+		croak "Could not write to $file_strings->[13+$i] $! \n";
 		print $decile_out join("\n",
 			@{$genomic_coordinates->{decile_coordinates}{$i}});
 	}

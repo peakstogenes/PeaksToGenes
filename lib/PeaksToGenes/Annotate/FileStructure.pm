@@ -1,3 +1,21 @@
+
+# Copyright 2012, 2013 Jason R. Dobson <peakstogenes@gmail.com>
+#
+# This file is part of peaksToGenes.
+#
+# peaksToGenes is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# peaksToGenes is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with peaksToGenes.  If not, see <http://www.gnu.org/licenses/>.
+
 package PeaksToGenes::Annotate::FileStructure 0.001;
 use Moose;
 use Carp;
@@ -44,6 +62,8 @@ has name	=>	(
 	is			=>	'ro',
 	isa			=>	'Str',
 	required	=>	1,
+	lazy		=>	1,
+	default		=>	'',
 );
 
 =head1 SUBROUTINES/METHODS
@@ -104,7 +124,7 @@ sub test_genome {
 			genome	=>	$self->genome
 		}
 	);
-	unless ( $available_genomes_search_result->genome eq $self->genome ) {
+	unless ( $available_genomes_search_result && $available_genomes_search_result->genome eq $self->genome ) {
 		croak "\n\nThe user-defined genome " . $self->genome . " has not been indexed. Please use the 'update' function to add the genome.\n\n";
 	}
 	return $available_genomes_search_result;
@@ -124,7 +144,7 @@ sub get_index_file_names {
 		push(@$genome_info,
 			$available_genomes_search_result->$location_string);
 	}
-	for ( my $i = 1; $i <= 100; $i++ ) {
+	for ( my $i = 1; $i <= 10; $i++ ) {
 		my $upstream_file = '_' . $i . 'kb_upstream_peaks_file';
 		my $downstream_file = '_' . $i . 'kb_downstream_peaks_file';
 		unshift(@$genome_info, $available_genomes_search_result->$upstream_file);

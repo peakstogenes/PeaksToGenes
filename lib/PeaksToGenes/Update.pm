@@ -1,4 +1,23 @@
+
+# Copyright 2012, 2013 Jason R. Dobson <peakstogenes@gmail.com>
+#
+# This file is part of peaksToGenes.
+#
+# peaksToGenes is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# peaksToGenes is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with peaksToGenes.  If not, see <http://www.gnu.org/licenses/>.
+
 package PeaksToGenes::Update 0.001;
+
 use Moose;
 use Carp;
 use FindBin;
@@ -60,22 +79,28 @@ Finally, it will update the AvailableGenomes database.
 
 sub update {
 	my $self = shift;
+
 	# Create an instance on PeaksToGenes::Update::UCSC
 	my $ucsc = PeaksToGenes::Update::UCSC->new(
 		genome	=>	$self->genome,
 	);
+
 	# Run the PeaksToGenes::Update::UCSC fetch_tables subroutine
 	# to download the minimal base tables for the user-defined
 	# genome
-	my $base_files = $ucsc->fetch_tables;
+	my ($base_files, $chromosome_sizes_file) = $ucsc->fetch_tables;
+
 	# Run the create_statement subroutine to iterate through the base files
 	# and extract the relative location of the index files using a compiled
-	# regular expression
+	# regular expression. 
 	my $available_genomes_insert = $self->create_statement($base_files);
+
 	# Make a call to the update_database subroutine to insert the lines
-	# into the database
+	# into the database and update the chromosome sizes tables.
 	my ($genome_id, $promoter_file) =
-	$self->update_database($available_genomes_insert);
+	$self->update_database($available_genomes_insert,
+		$chromosome_sizes_file);
+
 	# Make a call to the update_transcripts subroutine to extract the
 	# transcript accessions and insert them into the transcripts table
 	$self->update_transcripts($genome_id, $promoter_file);
@@ -84,11 +109,9 @@ sub update {
 sub create_statement {
 	my ($self, $base_files) = @_;
 	# Create a Hash Ref to insert into the available_genomes table
-	my $available_genomes_insert = [
-		{
-			genome	=>	$self->genome,
-		}
-	];
+	my $available_genomes_insert = {
+		genome	=>	$self->genome,
+	};
 	# Create a stored regular expression to extract the base table names
 	# from each file
 	my $genome = $self->genome;
@@ -96,7 +119,7 @@ sub create_statement {
 	# Iterate through the files created and add them to the insert statement
 	foreach my $file_string (@$base_files) {
 		if ($file_string =~ m/$regex_search/) {
-			$available_genomes_insert->[0]{lc($3) . "_peaks_file"} = $file_string;
+			$available_genomes_insert->{lc($3) . "_peaks_file"} = $file_string;
 		} else {
 			die "\n\nCould not match $file_string to pattern. Please check with your installation or version of Perl.\n\n";
 		}
@@ -105,11 +128,17 @@ sub create_statement {
 }
 
 sub update_database {
-	my ($self, $available_genomes_insert) = @_;
+	my ($self, $available_genomes_insert, $chromosome_sizes_file) = @_;
 	# Create an instance of the AvailableGenome results set and insert files
 	my $available_genomes_results_set = $self->schema->resultset('AvailableGenome');
 	my $available_genome_insert_result =
-	$available_genomes_results_set->update_or_create(@$available_genomes_insert);
+	$available_genomes_results_set->update_or_create($available_genomes_insert);
+	$self->schema->resultset('ChromosomeSize')->update_or_create(
+		{
+			genome_id				=>	$available_genome_insert_result->id,
+			chromosome_sizes_file	=>	$chromosome_sizes_file
+		}
+	);
 	return ($available_genome_insert_result->id,
 		$available_genome_insert_result->_1kb_upstream_peaks_file);
 }

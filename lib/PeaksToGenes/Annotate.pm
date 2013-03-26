@@ -1,3 +1,21 @@
+
+# Copyright 2012, 2013 Jason R. Dobson <peakstogenes@gmail.com>
+#
+# This file is part of peaksToGenes.
+#
+# peaksToGenes is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# peaksToGenes is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with peaksToGenes.  If not, see <http://www.gnu.org/licenses/>.
+
 package PeaksToGenes::Annotate 0.001;
 use Moose;
 use Carp;
@@ -51,10 +69,16 @@ has name	=>	(
 	required	=>	1,
 );
 
-has summits	=>	(
+has bed_file	=>	(
 	is			=>	'ro',
 	isa			=>	'Str',
 	required	=>	1,
+);
+
+has processors	=>	(
+	is			=>	'ro',
+	isa			=>	'Int',
+	default		=>	1,
 );
 
 =head2 annotate
@@ -68,10 +92,9 @@ folloing:
 	3. Using an ordered Array Ref, calls instersectBed to intersect the
 	   user-defined intervals with the genomic index
 	4. Parses the intersected  regions:
-		a. Stores experimental interval coordinates, name, and score
-		b. Stores the number of experimental intervals per genomic
+		a. Stores the number of experimental intervals per genomic
 		   interval
-		c. Measures the length of each genomic interval, which was
+		b. Measures the length of each genomic interval, which was
 		   overlapped by an experimental interval
 	5. Normalize the number of experimental intervals by length of the
 	   genomic interval
@@ -102,7 +125,8 @@ sub annotate {
 		schema		=>	$self->schema,
 		genome		=>	$self->genome,
 		index_files	=>	$genome_info,
-		summits		=>	$self->summits,
+		bed_file	=>	$self->bed_file,
+		processors	=>	$self->processors,
 	);
 	my $indexed_peaks = $bedtools->annotate_peaks;
 
@@ -116,6 +140,7 @@ sub annotate {
 		name			=>	$self->name,
 		ordered_index	=>	$genome_info,
 		genome			=>	$self->genome,
+		processors		=>	$self->processors,
 	);
 	$database->parse_and_store;
 }

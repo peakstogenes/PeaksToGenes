@@ -1,6 +1,25 @@
+
+# Copyright 2012, 2013 Jason R. Dobson <peakstogenes@gmail.com>
+#
+# This file is part of peaksToGenes.
+#
+# peaksToGenes is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# peaksToGenes is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with peaksToGenes.  If not, see <http://www.gnu.org/licenses/>.
+
 package PeaksToGenes::Annotate::Database 0.001;
 use Moose;
 use Carp;
+use Data::Dumper;
 
 =head1 NAME
 
@@ -101,79 +120,23 @@ sub parse_row_items {
 	my $insert = {
 		genome_id	=>	$genome_id,
 		experiment	=>	$self->name,
-		gene_body_annotations		=>	[],
 		gene_body_numbers_of_peaks	=>	[],
-		downstream_annotations		=>	[],
 		downstream_numbers_of_peaks	=>	[],
-		upstream_annotations		=>	[],
 		upstream_numbers_of_peaks	=>	[],
-		transcript_annotations		=>	[],
 		transcript_numbers_of_peaks	=>	[],
 	};
 
 	# Copy the base regular expression into a scalar string
 	my $base_regex = $self->base_regex;
-
+	
 	# Iterate through the genes keys in the indexed peaks structure
 	foreach my $accession ( keys %{$self->indexed_peaks} ) {
 
-		# Iterate through the ordered index and extract the required information
-		# from the indexed_peaks Hash Ref
-		foreach my $file_string (@{$self->ordered_index}) {
-
-			# Create a string to hold the relative location
-			my $location = '';
-			if ($file_string =~ qr/($base_regex)(.+?)\.bed$/ ) {
-				$location = $2;
-			}
-
-			# If the location is found by the regular expression normalize
-			# the number of experimental intervals found per genomic
-			# interval based on the length of the genomic interval
-			if ($location) {
-				# Append the information type to the location string
-				my $peak_number = $location . '_Number_of_Peaks';
-				my $peak_info = $location . '_Peaks_Information';
-				my $interval_size = $location . '_Interval_Size';
-
-				# Normalize the number of intervals found in place
-				if ( $self->indexed_peaks->{$accession}{$location .
-					'_Interval_Size'}  &&
-					$self->indexed_peaks->{$accession}{$location .
-					'_Interval_Size'} > 0 ) {
-					# Normalize the number of peaks found in the interval to
-					# peaks per Kb in place
-					$self->indexed_peaks->{$accession}{$peak_number} /=
-					($self->indexed_peaks->{$accession}{$interval_size} /
-						1000);
-				}
-			} else {
-				croak "There was a problem determining the location of " .
-				"the $file_string. Please check that this genome is " .
-				"installed correctly\n\n";
-			}
-		}
-
 		# Search for the transcript id from the transcripts table
-		my $transcript_id = $self->extract_transcript_id($accession);
+		my $transcript_id = $self->extract_transcript_id($accession,
+			$genome_id);
 
 		# Pre-define a Hash Ref for each type of insert for this line
-		my $upstream_annotation_insert_line = {
-			gene		=>	$transcript_id,
-			genome_id	=>	$genome_id,
-		};
-		my $downstream_annotation_insert_line = {
-			gene		=>	$transcript_id,
-			genome_id	=>	$genome_id,
-		};
-		my $transcript_annotation_insert_line = {
-			gene		=>	$transcript_id,
-			genome_id	=>	$genome_id,
-		};
-		my $gene_body_annotation_insert_line = {
-			gene		=>	$transcript_id,
-			genome_id	=>	$genome_id,
-		};
 		my $upstream_number_of_peaks_insert_line = {
 			gene		=>	$transcript_id,
 			genome_id	=>	$genome_id,
@@ -191,83 +154,89 @@ sub parse_row_items {
 			genome_id	=>	$genome_id,
 		};
 
-		# Add the 3'-UTR peak information and number of peaks to the
-		# transcript information insert lines
-		$transcript_number_of_peaks_insert_line->{_3prime_utr_number_of_peaks} =
-		$self->indexed_peaks->{$accession}{_3Prime_UTR_Number_of_Peaks};
-		$transcript_annotation_insert_line->{_3prime_utr_peaks_information} =
-		$self->indexed_peaks->{$accession}{_3Prime_UTR_Peaks_Information};
+		# Add the 3'-UTR number of peaks to the transcript information
+		# insert lines
+		if (
+			$self->indexed_peaks->{$accession}{_3Prime_UTR_Number_of_Peaks}
+			) {
+			$transcript_number_of_peaks_insert_line->{_3prime_utr_number_of_peaks} =
+			$self->indexed_peaks->{$accession}{_3Prime_UTR_Number_of_Peaks};
+		} else {
+			$transcript_number_of_peaks_insert_line->{_3prime_utr_number_of_peaks}
+			= 0;
+		}
 
 		# Add the 5'-UTR peak information and number of peaks to the
 		# transcript information insert lines
-		$transcript_number_of_peaks_insert_line->{_5prime_utr_number_of_peaks} =
-		$self->indexed_peaks->{$accession}{_5Prime_UTR_Number_of_Peaks};
-		$transcript_annotation_insert_line->{_5prime_utr_peaks_information} =
-		$self->indexed_peaks->{$accession}{_5Prime_UTR_Peaks_Information};
+		if (
+			$self->indexed_peaks->{$accession}{_5Prime_UTR_Number_of_Peaks}
+			) {
+			$transcript_number_of_peaks_insert_line->{_5prime_utr_number_of_peaks} =
+			$self->indexed_peaks->{$accession}{_5Prime_UTR_Number_of_Peaks};
+		} else {
+			$transcript_number_of_peaks_insert_line->{_5prime_utr_number_of_peaks}
+			= 0;
+		}
 
 		# Add the exons peak information and number of peaks to the
 		# transcript information insert lines
-		$transcript_number_of_peaks_insert_line->{_exons_number_of_peaks} =
-		$self->indexed_peaks->{$accession}{_Exons_Number_of_Peaks};
-		$transcript_annotation_insert_line->{_exons_peaks_information} =
-		$self->indexed_peaks->{$accession}{_Exons_Peaks_Information};
+		if ( $self->indexed_peaks->{$accession}{_Exons_Number_of_Peaks} ) {
+			$transcript_number_of_peaks_insert_line->{_exons_number_of_peaks} =
+			$self->indexed_peaks->{$accession}{_Exons_Number_of_Peaks};
+		} else {
+			$transcript_number_of_peaks_insert_line->{_exons_number_of_peaks}
+			= 0;
+		}
 
 		# Add the introns peak information and number of peaks to the
 		# transcript information insert lines
 		$transcript_number_of_peaks_insert_line->{_introns_number_of_peaks} =
 		$self->indexed_peaks->{$accession}{_Introns_Number_of_Peaks};
-		$transcript_annotation_insert_line->{_introns_peaks_information} =
-		$self->indexed_peaks->{$accession}{_Introns_Peaks_Information};
 
 		# Iterate by decile to add the decile peak information and number
 		# of peaks to the gene body insert lines
 		for (my $i = 0; $i < 100; $i += 10) {
-			$gene_body_number_of_peaks_insert_line->{'_gene_body_' . $i .
-			'_to_' . ($i + 10) . '_number_of_peaks'} =
-			$self->indexed_peaks->{$accession}{'_Gene_Body_' . $i . '_to_'
-			. ($i + 10) . '_Number_of_Peaks'};
-			$gene_body_annotation_insert_line->{'_gene_body_' . $i . '_to_'
-			. ($i + 10) . '_peaks_information'} =
-			$self->indexed_peaks->{$accession}{'_Gene_Body_' . $i . '_to_'
-			. ($i + 10) . '_Peaks_Information'};
+			if ( $self->indexed_peaks->{$accession}{'_Gene_Body_' . $i .
+				'_to_' . ($i + 10) . '_Number_of_Peaks'} ) {
+				$gene_body_number_of_peaks_insert_line->{'_gene_body_' . $i .
+				'_to_' . ($i + 10) . '_number_of_peaks'} =
+				$self->indexed_peaks->{$accession}{'_Gene_Body_' . $i . '_to_'
+				. ($i + 10) . '_Number_of_Peaks'};
+			} else {
+				$gene_body_number_of_peaks_insert_line->{'_gene_body_' . $i .
+				'_to_' . ($i + 10) . '_number_of_peaks'} = 0;
+			}
 		}
 
 		# Iterate through the upstream and downstream locations and add the
 		# peaks information and number of peaks to the upstream and
 		# downstream peaks insert lines
-		for ( my $i = 1; $i <= 100; $i++ ) {
+		for ( my $i = 1; $i <= 10; $i++ ) {
 
-			$upstream_annotation_insert_line->{'_' . $i .
-			'kb_upstream_peaks_information'} =
-			$self->indexed_peaks->{$accession}{'_' . $i .
-			'Kb_Upstream_Peaks_Information'};
+			if ( $self->indexed_peaks->{$accession}{'_' . $i .
+				'Kb_Upstream_Number_of_Peaks'} ) {
+				$upstream_number_of_peaks_insert_line->{'_' . $i .
+				'kb_upstream_number_of_peaks'} =
+				$self->indexed_peaks->{$accession}{'_' . $i .
+				'Kb_Upstream_Number_of_Peaks'};
+			} else {
+				$upstream_number_of_peaks_insert_line->{'_' . $i .
+				'kb_upstream_number_of_peaks'} = 0;
+			}
 
-			$downstream_annotation_insert_line->{'_' . $i .
-			'kb_downstream_peaks_information'} =
-			$self->indexed_peaks->{$accession}{'_' . $i .
-			'Kb_Downstream_Peaks_Information'};
-
-			$upstream_number_of_peaks_insert_line->{'_' . $i .
-			'kb_upstream_number_of_peaks'} =
-			$self->indexed_peaks->{$accession}{'_' . $i .
-			'Kb_Upstream_Number_of_Peaks'};
-
-			$downstream_number_of_peaks_insert_line->{'_' . $i .
-			'kb_downstream_number_of_peaks'} =
-			$self->indexed_peaks->{$accession}{'_' . $i .
-			'Kb_Downstream_Number_of_Peaks'};
-
+			if ( $self->indexed_peaks->{$accession}{'_' . $i .
+				'Kb_Downstream_Number_of_Peaks'} ) {
+				$downstream_number_of_peaks_insert_line->{'_' . $i .
+				'kb_downstream_number_of_peaks'} =
+				$self->indexed_peaks->{$accession}{'_' . $i .
+				'Kb_Downstream_Number_of_Peaks'};
+			} else {
+				$downstream_number_of_peaks_insert_line->{'_' . $i .
+				'kb_downstream_number_of_peaks'} = 0;
+			}
 		}
 
-		# Add the insert lines to the insert statement
-		push(@{$insert->{upstream_annotations}},
-			$upstream_annotation_insert_line);
-		push(@{$insert->{downstream_annotations}},
-			$downstream_annotation_insert_line);
-		push(@{$insert->{transcript_annotations}},
-			$transcript_annotation_insert_line);
-		push(@{$insert->{gene_body_annotations}},
-			$gene_body_annotation_insert_line);
+		# Add the lines to the insert statement
 		push(@{$insert->{gene_body_numbers_of_peaks}},
 			$gene_body_number_of_peaks_insert_line);
 		push(@{$insert->{upstream_numbers_of_peaks}},
@@ -318,21 +287,38 @@ sub extract_genome_id {
 	);
 	
 	# Return the genomic index id number
-	return $available_genomes_search_results->id;
+	if ( $available_genomes_search_results ) {
+		return $available_genomes_search_results->id;
+	} else {
+		croak "\n\nThere was a problem extracting the " .
+		"genome ID from the PeaksToGenes database. " .
+		"Please run the update function and try again. " .
+		"If the problem persists, please contact the authors" .
+		"\n\n";
+
+	}
 }
 
 sub extract_transcript_id {
-	my ($self, $accession) = @_;
+	my ($self, $accession, $genome_id) = @_;
 
 	# Search for the transcript id from the transcripts table
 	my $transcript_search_result =
 	$self->schema->resultset('Transcript')->find(
 		{
-			transcript	=>	$accession
+			transcript	=>	$accession,
+			genome_id	=>	$genome_id
 		}
 	);
 
-	return $transcript_search_result->id;
+	if ( $transcript_search_result ) {
+		return $transcript_search_result->id;
+	} else {
+		croak "\n\nThere was a problem extracting the transcript ID from" .
+		" the PeaksToGenes database. Please run the 'update' function and"
+		. " try again. If the problem persists, please contact the authors"
+		. "\n\n";
+	}
 }
 	
 

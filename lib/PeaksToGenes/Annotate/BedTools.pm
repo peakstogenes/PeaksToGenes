@@ -1,9 +1,28 @@
+
+# Copyright 2012, 2013 Jason R. Dobson <peakstogenes@gmail.com>
+#
+# This file is part of peaksToGenes.
+#
+# peaksToGenes is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# peaksToGenes is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with peaksToGenes.  If not, see <http://www.gnu.org/licenses/>.
+
 package PeaksToGenes::Annotate::BedTools 0.001;
 use Moose;
 use Carp;
 use FindBin;
 use lib "$FindBin::Bin/../lib";
 use PeaksToGenes::Update::UCSC;
+use Parallel::ForkManager;
 use Data::Dumper;
 
 =head1 NAME
@@ -19,9 +38,9 @@ Version 0.001
 =head1 SYNOPSIS
 
 This module provides most of the business logic for the PeaksToGenes
-program. Given a bed file of peak summits, and a list of index files,
-this module will annotate the locations of the summits relative to
-the transcriptional start site of each transcript.
+program. Given a bed file of genomic intervals, and a list of index files,
+this module will annotate the locations of the peaks relative to the
+transcriptional start site of each transcript.
 
 =head1 SUBROUTINES/METHODS
 
@@ -47,13 +66,11 @@ has genome	=>	(
 has index_files	=>	(
 	is			=>	'ro',
 	isa			=>	'ArrayRef[Str]',
-	required	=>	1,
 );
 
-has summits	=>	(
+has bed_file	=>	(
 	is			=>	'ro',
 	isa			=>	'Str',
-	required	=>	1,
 );
 
 has base_regex	=>	(
@@ -68,6 +85,12 @@ has base_regex	=>	(
 		$self->genome;
 		return $base_regex;
 	}
+);
+
+has processors	=>	(
+	is			=>	'ro',
+	isa			=>	'Int',
+	default		=>	1,
 );
 
 =head2 annotate_peaks
@@ -88,9 +111,14 @@ sub annotate_peaks {
 	# formatted.
 	$self->check_bed_file;
 
+	# Run the PeaksToGenes::Annotate::BedTools::merge_bed subroutine to
+	# merge any overlapping intervals into a temporary BED-format file for
+	# faster indexed with intersectBed
+	my $merged_bed_file = $self->merge_bed;
+
 	# Make a call to align_peaks to determine to overlap of peaks relative
 	# to RefSeq gene positions
-	my $indexed_peaks = $self->align_peaks;
+	my $indexed_peaks = $self->align_peaks($merged_bed_file);
 
 	# Return the indexed_peaks Hash Ref to the PeaksToGenes::Annotate
 	# controller module.
@@ -107,13 +135,9 @@ the genome defined by the user.
 sub check_bed_file {
 	my $self = shift;
 
-	# Create an instance of PeaksToGenes::Update::UCSC
-	my $ucsc = PeaksToGenes::Update::UCSC->new(
-		genome	=>	$self->genome,
-	);
-
-	# Get the chromosome sizes from the UCSC MySQL Tables
-	my $chromosome_sizes = $ucsc->chromosome_sizes;
+	# Fetch the chromosome sizes from the database by calling
+	# PeaksToGenes::Annotate::BedTools::chromosome_sizes
+	my $chromosome_sizes = $self->chromosome_sizes;
 
 	# Pre-declare a line number to return useful errors to the user
 	my $line_number = 1;
@@ -121,14 +145,14 @@ sub check_bed_file {
 	# Open the user-defined file, iterate through and parse the lines. Any
 	# errors found will cause an immediate termination of the script and
 	# return an error message to the user.
-	open my $summits_fh, "<", $self->summits or croak 
-	"Could not read from BED file: " . $self->summits . 
+	open my $summits_fh, "<", $self->bed_file or croak 
+	"Could not read from BED file: " . $self->bed_file . 
 	". Please check the permissions on this file. $!\n\n";
 	while (<$summits_fh>) {
 		my $line = $_;
 		chomp ($line);
 		# Split the line by tab characters
-		my ($chr, $start, $stop, $name, $score, $rest_of_line) =
+		my ($chr, $start, $stop, $name, $rest_of_line) =
 		split(/\t/, $line);
 
 		# Test to make sure the chromosome defined in column 1 is a valid
@@ -164,8 +188,8 @@ sub check_bed_file {
 		# interval start in column two and the interval end in column three
 		# are valid coordinates based on the length of the chromosome
 		# defined in column one for the user-defined genome
-		unless (($start < $chromosome_sizes->{$chr}) && 
-			($stop < $chromosome_sizes->{$chr})) {
+		unless (($start <= $chromosome_sizes->{$chr}) && 
+			($stop <= $chromosome_sizes->{$chr})) {
 			croak "On line: $line_number the coordinates are not valid " .
 			"for the user-defined genome: " . $self->genome 
 			. ". Please check your file.\n\n";
@@ -180,45 +204,119 @@ sub check_bed_file {
 			"name in this column.\n\n";
 		}
 
-		# Test to make sure a score is defined in the fifth column and
-		# that it is a numerical value 
-		unless ($score && ($score >= 0 || $score <= 0)) {
-			croak "On line: $line_number you do not have a score entered ".
-			"for your peak/interval. If these intervals do not have " . 
-			"scores associated with them, please use the helper script " .
-			"to add a nominal score in the fifth column.\n\n";
-		}
-
-		# Test to make sure there are no other tab-delimited fields in the
-		# file past the score in the fifth column.
-		if ($rest_of_line){
-			croak "On line: $line_number, you have extra tab-" . 
-			"delimited items after the fifth (score) column. Please " .
-			"use the helper script to trim these entries from your " .
-			"file.\n\n";
-		}
-
 		$line_number++;
 	}
 }
 
-sub align_peaks {
+sub merge_bed {
 	my $self = shift;
+
+	# Define a string to hold the temporary peaks file
+	my $merged_peaks_fh = "$FindBin::Bin/../temp_merged.bed";
+
+	# Copy the BED-format file into a scalar string
+	my $unmerged_peaks_file = $self->bed_file;
+
+	# Run mergeBed to merge the overlapping peak intervals
+	`mergeBed -n -i $unmerged_peaks_file > $merged_peaks_fh`;
+
+	# Return the file name to the main subroutine
+	return $merged_peaks_fh;
+}
+
+sub chromosome_sizes {
+	my $self = shift;
+
+	# Create an instance of PeaksToGenes::Update::UCSC and run the
+	# PeaksToGenes::Update::UCSC::genome_info subroutine to make sure that
+	# the user-define genome string is a valid RefSeq genome
+	my $ucsc = PeaksToGenes::Update::UCSC->new(
+		genome	=>	$self->genome,
+	);
+	unless ( $ucsc->genome_info->{$self->genome} ) {
+		croak "\n\nThe genome you have entered: " .
+		$self->genome . " is not a valid RefSeq annotated genome. Please check and make sure you have entered the correct genome\n\n";
+	}
+
+	# Fetch the genome_id for the user-defined genome
+	my $genome_search = $self->schema->resultset('AvailableGenome')->find(
+		{
+			genome	=>	$self->genome
+		}
+	);
+
+	# Pre-declare a scalar to hold the genome ID if it has been found in
+	# the PeaksToGenes database
+	my $genome_id;
+	if ( $genome_search ) {
+		$genome_id = $genome_search->id;
+	} else {
+		croak "\n\nThe genome: " . $self->genome . 
+		" has not been installed in the PeaksToGenes database. Please use Update Mode to install this genome.\n\n";
+	}
+
+	# Using the genome_id, fetch the file string for the chromosome sizes
+	# file corresponding to the user-defined genome
+	my $chromosome_sizes_fh =
+	$self->schema->resultset('ChromosomeSize')->find(
+		{
+			genome_id	=>	$genome_id,
+		}
+	)->chromosome_sizes_file;
+
+	# Pre-declare a Hash Ref to store the chromosome sizes information
+	my $chromosome_sizes = {};
+
+	# Open the chromosome sizes file, iterate through the lines, parse the
+	# data and store it in the Hash Ref
+	open my $chromosome_sizes_file, "<", $chromosome_sizes_fh or croak 
+	"Could not read from the chromosome sizes file: $chromosome_sizes_fh $!\n";
+	while (<$chromosome_sizes_file>) {
+		my $line = $_;
+		chomp($line);
+		my ($chr, $length) = split(/\t/, $line);
+		$chromosome_sizes->{$chr} = $length;
+	}
+	return $chromosome_sizes;
+}
+
+sub align_peaks {
+	my ($self, $summits_file) = @_;
 
 	# Copy the base regular expression into a scalar string.
 	my $base_regex = $self->base_regex;
 
-	# Copy the file string for the experimental intervals into a scalar
-	# string
-	my $summits_file = $self->summits;
-
 	# Pre-declare a Hash Ref to hold the intersected peaks information
 	my $indexed_peaks = {};
+
+	# Create an instance of Parallel::ForkManager with the number of
+	# threads allowed based on the number of processors defined by the user
+	my $pm = Parallel::ForkManager->new($self->processors);
+
+	# Define a subroutine to be run at the end of each thread, so that the
+	# information is correctly stored in the indexed_peaks Hash Ref
+	$pm->run_on_finish(
+		sub {
+			my ($pid, $exit_code, $ident, $exit_signal, $core_dump,
+				$data_structure) = @_;
+
+			my $peak_number = $data_structure->{peak_number};
+
+			foreach my $index_gene ( keys
+				%{$data_structure->{intersected_peaks}} ) {
+				$indexed_peaks->{$index_gene}{$peak_number} =
+				$data_structure->{intersected_peaks}{$index_gene};
+			}
+		}
+	);
+
 
 	# Iterate through the ordered index, and intersect the Summits file
 	# with the index file. Extract the information from any intersections
 	# that occur and store them in the indexed_peaks Hash Ref.
 	foreach my $index_file (@{$self->index_files}) {
+
+		$pm->start and next;
 
 		# Pre-declare a string to hold the genomic location of each index file
 		my $location = '';
@@ -234,8 +332,6 @@ sub align_peaks {
 			# peaks information, or the interval size for annotation into a
 			# scalar string so it is easier to store in the Hash Ref.
 			my $peak_number = $location . '_Number_of_Peaks';
-			my $peak_info = $location . '_Peaks_Information';
-			my $interval_size = $location . '_Interval_Size';
 
 			# Make a back ticks call to intersectBed with the -wo option so
 			# that the original entry for both the experimental intervals
@@ -243,62 +339,57 @@ sub align_peaks {
 			# where the experimental interval overlaps a genomic interval.
 			# The intersected interval lines will be stored in an array.
 			my @intersected_peaks = 
-			`intersectBed -wo -a $summits_file -b $index_file`;
+			`intersectBed -wo -a $index_file -b $summits_file`;
 
-			# Parse the information, and store it in the Hash Ref
-			foreach my $intersected_peak (@intersected_peaks) {
-				chomp ($intersected_peak);
+			# Pre-declare a Hash Ref to hold the information for the peaks
+			my $peaks_hash_ref = {};
 
-				# Split the fields by the tab-delimiter. Because of the
-				# nature of the method here, the input file must be
-				# correctly formatted.
-				my ($summit_chr, $summit_start, $summit_end, $summit_name,
-					$summit_score, $index_chr, $index_start, $index_stop,
-					$index_gene, $overlap) = split(/\t/,
-					$intersected_peak);
+			# Iterate through the intersected lines and parse the
+			# information, storing it in the peaks_hash_ref
+			foreach my $intersected_line ( @intersected_peaks ) {
 
-				# If an experimental interval has been found for this
-				# genomic interval, add to the number. If not, set the
-				# number to 1.
-				if ($indexed_peaks->{$index_gene}{$peak_number} ) {
-					$indexed_peaks->{$index_gene}{$peak_number}++;
+				chomp($intersected_line);
+
+				# Split the line by tab
+				my ($index_chr, $index_start, $index_stop, $index_gene,
+					$peaks_chr, $peaks_start, $peaks_stop,
+					$number_of_peaks, $overlap) = split(/\t/, $intersected_line);
+
+				# Calculate the size of the index interval
+				my $interval_size = $index_stop - $index_start + 1;
+
+				# Add the normalized (per Kb) number of peaks found to the
+				# peaks_hash_ref
+				if ( $peaks_hash_ref->{$index_gene} ) {
+					$peaks_hash_ref->{$index_gene} += ( $number_of_peaks *
+						(1000/$interval_size)
+					);
 				} else {
-					$indexed_peaks->{$index_gene}{$peak_number} = 1;
+					$peaks_hash_ref->{$index_gene} = ( $number_of_peaks *
+						(1000/$interval_size)
+					);
 				}
 
-				# If an experimental interval has been found for this
-				# genomic interval, add to the string. If not, set the
-				# string equal to the experimental information
-				if ( $indexed_peaks->{$index_gene}{$peak_info} ) {
-					$indexed_peaks->{$index_gene}{$peak_info} .= 
-					' /// ' . join(":", $summit_chr, $summit_start,
-						$summit_end, $summit_name, $summit_score) . 
-					' /// ';
-				} else {
-					$indexed_peaks->{$index_gene}{$peak_info} = 
-					' /// ' . join(":", $summit_chr, $summit_start,
-						$summit_end, $summit_name, $summit_score) . 
-					' /// ';
-				}
-
-				# If an experimental interval has been found for this
-				# genomic interval, add to the length of the interval
-				# (really only used in the case of introns and exons.
-				# If not, set the string equal to the length of the
-				# genomic interval.
-				if ( $indexed_peaks->{$index_gene}{$interval_size} ) {
-					$indexed_peaks->{$index_gene}{$interval_size} +=
-					($index_stop - $index_start + 1);
-				} else {
-					$indexed_peaks->{$index_gene}{$interval_size}
-					= ($index_stop - $index_start + 1);
-				}
 			}
+
+			$pm->finish(0, 
+				{
+					intersected_peaks	=>	$peaks_hash_ref,
+					peak_number			=>	$peak_number,
+				}
+			);
+
+		
 		} else {
 			croak "There was a problem determining the location of the " .
 			"index file relative to transcription start site";
 		}
 	}
+
+	$pm->wait_all_children;
+
+	# Remove the temporary merged BED-format file
+	unlink $summits_file;
 
 	# Return the Hash Ref of experimental intervals annotated based on
 	# location relative to RefSeq transcripts to the main subroutine.

@@ -1,3 +1,4 @@
+#!/usr/bin/env perl 
 
 # Copyright 2012, 2013 Jason R. Dobson <peakstogenes@gmail.com>
 #
@@ -16,23 +17,40 @@
 # You should have received a copy of the GNU General Public License
 # along with peaksToGenes.  If not, see <http://www.gnu.org/licenses/>.
 
-use utf8;
-package PeaksToGenes::UCSC;
-
-# Created by DBIx::Class::Schema::Loader
-# DO NOT MODIFY THE FIRST PART OF THIS FILE
-
 use strict;
 use warnings;
+use utf8;
 
-use base 'DBIx::Class::Schema';
+# Pre-define an Array Ref of Perl modules to be installed by cpanminus
+my $packages_to_install = [
+	'Moose',
+	'Moose::Util::TypeConstraints',
+	'MooseX::Getopt',
+	'Carp',
+	'Data::Dumper',
+	'FindBin',
+	'File::Which',
+	'DBI',
+	'DBIx::Class::Schema',
+	'DBIx::Class::Core',
+	'DBD::SQLite',
+	'DBD::mysql',
+	'Parallel::ForkManager',
+	'Statistics::ANOVA',
+	'Statistics::Test::WilcoxonRankSum',
+	'Statistics::Zed',
+	'Test::More',
+];
 
-__PACKAGE__->load_namespaces;
+# Install the packages using cpanminus
+foreach my $package (@$packages_to_install) {
+	`cpanm $package`;
+}
 
+use Test::More;
 
-# Created by DBIx::Class::Schema::Loader v0.07025 @ 2012-08-26 19:36:01
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:pTN4+6ThQD2EmbdOtw9EpQ
+foreach my $package (@$packages_to_install) {
+	require_ok($package);
+}
 
-
-# You can replace this text with custom code or comments, and it will be preserved on regeneration
-1;
+done_testing();

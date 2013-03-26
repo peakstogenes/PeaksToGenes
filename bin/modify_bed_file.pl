@@ -1,3 +1,4 @@
+#!/usr/bin/env perl 
 
 # Copyright 2012, 2013 Jason R. Dobson <peakstogenes@gmail.com>
 #
@@ -14,25 +15,24 @@
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with peaksToGenes.  If not, see <http://www.gnu.org/licenses/>
+# along with peaksToGenes.  If not, see <http://www.gnu.org/licenses/>.
 
-use utf8;
-package PeaksToGenes::Schema;
-
-# Created by DBIx::Class::Schema::Loader
-# DO NOT MODIFY THE FIRST PART OF THIS FILE
 
 use strict;
 use warnings;
+use utf8;
 
-use base 'DBIx::Class::Schema';
+my $bed_file = $ARGV[0];
 
-__PACKAGE__->load_namespaces;
+open my $file, "<", $bed_file or die "Could not read from $bed_file $!\n";
+while (<$file>) {
+	my $line = $_;
+	chomp ($line);
 
+	my @line_items = split(/\t/, $line);
 
-# Created by DBIx::Class::Schema::Loader v0.07025 @ 2012-08-26 12:20:08
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:ixoPMwI/pM4NJMyKQ2SrfQ
-
-
-# You can replace this text with custom code or comments, and it will be preserved on regeneration
-1;
+	if ( @line_items >= 6 ) {
+		print join("\t", $line_items[0], $line_items[1], $line_items[2],
+			$line_items[3], $line_items[4]), "\n";
+	}
+}

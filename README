@@ -6,15 +6,18 @@ INSTALLATION
 Installation of PeaksToGenes has been tested on Debian Linux
 and OS X. It is not configured to work with Windows.
 
-This module has two non-Perl dependencies: BedTools and SQLite3.
+This module has three non-Perl dependencies: BedTools, SQLite3, and MySQL.
 
 To install BedTools:
 
-	On Debian Linux:
+	BedTools should be compiled from source. The current package in the
+	apt-get repositories has been updated to function better.
 
-		sudo apt-get install bedtools
-
-	On OS X:
+	* BedTools has a dependency on zlib. The 'make' command will fail
+	* if this is not installed. On OS X this can be installed from
+	* source <>http://www.zlib.net/
+	* On Ubuntu:
+		sudo apt-get install zlib1g-dev
 
 		Get the source package for the BedTools:
 		<http://code.google.com/p/bedtools/downloads/list>
@@ -44,27 +47,74 @@ To install SQLite3
 		Copy the binary file to your PATH e.g.
 		sudo cp sqlite3 /usr/local/bin/
 
+To install MySQL
+
+	On Debian Linux:
+
+		[ Note that with Ubuntu 12.04LTS MySQL may already be
+		installed]
+		sudo apt-get install mysql-server
+
+	On OS X:
+
+		Download the OS-specific .DMG file from:
+		<http://dev.mysql.com/downloads/mysql/>
+
+		Follow the installation instructions.
+
 Perl Dependencies:
+
+One of the easiest ways to install a working version of this application,
+once external dependencies (non-Perl) have been met is to use PerlBrew and
+cpanminus to install everything needed as a non-root user using local::lib.
+
+Please visit <http://perlbrew.pl/> for PerlBrew installation instructions.
+PerlBrew includes a convenient command 'perlbrew intstall-cpanm', which
+will install cpanminus in your user directory. If you choose to use
+system-wide Perl and cpanminus for the installation of Perl dependencies,
+please visit <http://cpanmin.us> for installation instructions.
+
+Please note that installation of a local version of Perl may take some
+time, depending on the machine.
+
+This version of peaksToGenes was written and tested using Perl 5.14.2
+
+If cpanminus has been installed, from the peaksToGenes directory, run the
+./cpanm_install.pl script. If all non-Perl dependencies are met, the
+required Modules and their Perl Module dependencies should be installed by
+cpanminus. If there are problems installing Module dependencies, cpanminus
+will write these to the log file in your home directory.
 
 PeaksToGenes has the following Perl module dependencies:
 
-ExtUtils::MakeMaker
-FindBin
-Test::More
 Moose
-Carp
 Moose::Util::TypeConstraints
-Data::Dumper
 MooseX::Getopt
-Moose::Role
-DBIx::Class::Schema
-utf8
-DBIx::Class::Core
-lib
+Carp
+Data::Dumper
+FindBin
+File::Which
 DBI
+DBIx::Class::Schema
+DBIx::Class::Core
 DBD::SQLite
-WWW::Mechanize
+DBD::mysql
+Parallel::ForkManager
+Statistics::ANOVA
+Statistics::Test::WilcoxonRankSum
+Statistics::Zed
 
+** Please note that if you are installing DBD::mysql as a non-root user, it
+is likely that the tests will fail unless your username has all privileges
+for the test database. If the installation for DBD::mysql fails, try
+running 'cpanm install DBD::mysql` then check the log file for instructions
+on how to change permissions for testing. Alternatively, you can install
+this module without testing using 'cpanm --notest DBD::mysql', however,
+this may result in unexpected behavior. **
+
+If you choose to install these Perl Modules system-wide, you will need root
+access, and can be installed using CPAN (unless of course you have
+configured CPAN to use local::lib - which can be tricky).
 To install on any system, use CPAN e.g.
 
 	$ sudo cpan
@@ -78,27 +128,16 @@ Once all of the dependencies have been updated, please add the path to $/PeaksTo
 to either your ~/.bashrc or ~/.bash_profile file to allow for system-wide calling of
 PeaksToGenes.
 
+Some of these Perl dependencies require a 'make' function. When given an
+error message to this end, please consult with your package distributor to
+install the appropriate companion tools.
+
 SUPPORT AND DOCUMENTATION
 
 After installing, you can find documentation for this module with the
 perldoc command.
 
     perldoc PeaksToGenes
-
-You can also look for information at:
-
-    RT, CPAN's request tracker (report bugs here)
-        http://rt.cpan.org/NoAuth/Bugs.html?Dist=PeaksToGenes
-
-    AnnoCPAN, Annotated CPAN documentation
-        http://annocpan.org/dist/PeaksToGenes
-
-    CPAN Ratings
-        http://cpanratings.perl.org/d/PeaksToGenes
-
-    Search CPAN
-        http://search.cpan.org/dist/PeaksToGenes/
-
 
 LICENSE AND COPYRIGHT
 
