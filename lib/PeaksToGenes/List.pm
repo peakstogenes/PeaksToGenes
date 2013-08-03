@@ -18,15 +18,34 @@
 
 package PeaksToGenes::List 0.001;
 
-use Moose;
+use Moose::Role;
 use Carp;
+use FindBin;
+use lib "$FindBin::Bin/../lib";
 use Data::Dumper;
 
-has schema	=>	(
-	is			=>	'ro',
-	isa			=>	'PeaksToGenes::Schema',
-	required	=>	1,
-);
+with 'PeaksToGenes::Database';
+
+=head1 NAME
+
+PeaksToGenes::List
+
+=head1 AUTHOR
+
+Jason R. Dobson, peakstogenes@gmail.com
+
+=head1 DESCRIPTION
+
+This Moose role is designed to export a method to list all of the experiment
+names defined in the PeaksToGenes database.
+
+=head1 SYNOPSIS
+
+with 'PeaksToGenes::List';
+
+$self->list_all_experiments;
+
+=cut
 
 sub list_all_experiments {
 	my $self = shift;

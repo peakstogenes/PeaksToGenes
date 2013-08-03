@@ -34,7 +34,6 @@ my $required_executables = {
 	SQLite			=>	'sqlite3',
 	intersectBed	=>	'intersectBed',
 	mergeBed		=>	'mergeBed',
-	MySQL			=>	'mysql',
 };
 
 # Pre-declare an Array Ref to hold error messages if external executables

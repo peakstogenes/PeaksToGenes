@@ -1,21 +1,3 @@
-
-# Copyright 2012, 2013 Jason R. Dobson <peakstogenes@gmail.com>
-#
-# This file is part of peaksToGenes.
-#
-# peaksToGenes is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# peaksToGenes is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with peaksToGenes.  If not, see <http://www.gnu.org/licenses/>.
-
 use utf8;
 package PeaksToGenes::Schema::Result::GeneBodyNumberOfPeaks;
 
@@ -174,7 +156,7 @@ __PACKAGE__->belongs_to(
   "genome",
   "PeaksToGenes::Schema::Result::AvailableGenome",
   { id => "genome_id" },
-  { is_deferrable => 1, on_delete => "CASCADE", on_update => "CASCADE" },
+  { is_deferrable => 0, on_delete => "NO ACTION", on_update => "CASCADE" },
 );
 
 =head2 name
@@ -189,12 +171,12 @@ __PACKAGE__->belongs_to(
   "name",
   "PeaksToGenes::Schema::Result::Experiment",
   { id => "name" },
-  { is_deferrable => 1, on_delete => "CASCADE", on_update => "CASCADE" },
+  { is_deferrable => 0, on_delete => "CASCADE", on_update => "NO ACTION" },
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07025 @ 2012-10-05 21:56:09
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:Bng0vwMJO3lzx/7AOtc7eg
+# Created by DBIx::Class::Schema::Loader v0.07036 @ 2013-08-02 12:42:28
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:M1325T448g3YnmsEKseAaw
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

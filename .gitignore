@@ -9,3 +9,4 @@ batch*
 nohup.out
 List*
 db/peakstogenes.db-journal
+*.DS_Store

@@ -106,24 +106,32 @@ sub create_table {
 sub mean_and_sum {
 	my ($self, $array) = @_;
 
-	return ( sum(@$array), (sum(@$array) / @$array));
+	if ( @{$array} ) {
+		return ( sum(@$array), (sum(@$array) / @$array));
+	} else {
+		return (0, 0);
+	}
 }
 
 sub sem {
 	my ($self, $array, $mean) = @_;
 
-	# Pre-declare an Array Ref to hold the squared differences.
-	my $squared_differences = [];
+	if ( @{$array} ) {
+		# Pre-declare an Array Ref to hold the squared differences.
+		my $squared_differences = [];
 
-	foreach my $value ( @$array ) {
-		push(@$squared_differences,
-			( $value ** 2 ) - ( $mean ** 2 )
-		);
+		foreach my $value ( @$array ) {
+			push(@$squared_differences,
+				( $value ** 2 ) - ( $mean ** 2 )
+			);
+		}
+
+		my $stdev = sqrt (sum(@$squared_differences) / @$squared_differences);
+
+		return ( $stdev / sqrt(@$array) );
+	} else {
+		return 0;
 	}
-
-	my $stdev = sqrt (sum(@$squared_differences) / @$squared_differences);
-
-	return ( $stdev / sqrt(@$array) );
 }
 
 1;

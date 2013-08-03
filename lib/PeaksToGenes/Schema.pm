@@ -1,4 +1,3 @@
-
 # Copyright 2012, 2013 Jason R. Dobson <peakstogenes@gmail.com>
 #
 # This file is part of peaksToGenes.

@@ -162,7 +162,7 @@ sub check_files {
 		# errors found will cause an immediate termination of the script and
 		# return an error message to the user.
 		open my $summits_fh, "<", $bed_file or croak 
-		"Could not read from BED file: " . $self->bed_file . 
+		"Could not read from BED file: " . $bed_file . 
 		". Please check the permissions on this file. $!\n\n";
 		while (<$summits_fh>) {
 			my $line = $_;

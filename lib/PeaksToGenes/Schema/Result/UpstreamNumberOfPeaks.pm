@@ -1,21 +1,3 @@
-
-# Copyright 2012, 2013 Jason R. Dobson <peakstogenes@gmail.com>
-#
-# This file is part of peaksToGenes.
-#
-# peaksToGenes is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# peaksToGenes is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with peaksToGenes.  If not, see <http://www.gnu.org/licenses/>.
-
 use utf8;
 package PeaksToGenes::Schema::Result::UpstreamNumberOfPeaks;
 
@@ -65,52 +47,52 @@ __PACKAGE__->table("upstream_number_of_peaks");
   is_foreign_key: 1
   is_nullable: 0
 
-=head2 _10kb_upstream_number_of_peaks
+=head2 _10_steps_upstream_number_of_peaks
 
   data_type: 'real'
   is_nullable: 1
 
-=head2 _9kb_upstream_number_of_peaks
+=head2 _9_steps_upstream_number_of_peaks
 
   data_type: 'real'
   is_nullable: 1
 
-=head2 _8kb_upstream_number_of_peaks
+=head2 _8_steps_upstream_number_of_peaks
 
   data_type: 'real'
   is_nullable: 1
 
-=head2 _7kb_upstream_number_of_peaks
+=head2 _7_steps_upstream_number_of_peaks
 
   data_type: 'real'
   is_nullable: 1
 
-=head2 _6kb_upstream_number_of_peaks
+=head2 _6_steps_upstream_number_of_peaks
 
   data_type: 'real'
   is_nullable: 1
 
-=head2 _5kb_upstream_number_of_peaks
+=head2 _5_steps_upstream_number_of_peaks
 
   data_type: 'real'
   is_nullable: 1
 
-=head2 _4kb_upstream_number_of_peaks
+=head2 _4_steps_upstream_number_of_peaks
 
   data_type: 'real'
   is_nullable: 1
 
-=head2 _3kb_upstream_number_of_peaks
+=head2 _3_steps_upstream_number_of_peaks
 
   data_type: 'real'
   is_nullable: 1
 
-=head2 _2kb_upstream_number_of_peaks
+=head2 _2_steps_upstream_number_of_peaks
 
   data_type: 'real'
   is_nullable: 1
 
-=head2 _1kb_upstream_number_of_peaks
+=head2 _1_steps_upstream_number_of_peaks
 
   data_type: 'real'
   is_nullable: 1
@@ -126,25 +108,25 @@ __PACKAGE__->add_columns(
   { data_type => "integer", is_foreign_key => 1, is_nullable => 0 },
   "gene",
   { data_type => "integer", is_foreign_key => 1, is_nullable => 0 },
-  "_10kb_upstream_number_of_peaks",
+  "_10_steps_upstream_number_of_peaks",
   { data_type => "real", is_nullable => 1 },
-  "_9kb_upstream_number_of_peaks",
+  "_9_steps_upstream_number_of_peaks",
   { data_type => "real", is_nullable => 1 },
-  "_8kb_upstream_number_of_peaks",
+  "_8_steps_upstream_number_of_peaks",
   { data_type => "real", is_nullable => 1 },
-  "_7kb_upstream_number_of_peaks",
+  "_7_steps_upstream_number_of_peaks",
   { data_type => "real", is_nullable => 1 },
-  "_6kb_upstream_number_of_peaks",
+  "_6_steps_upstream_number_of_peaks",
   { data_type => "real", is_nullable => 1 },
-  "_5kb_upstream_number_of_peaks",
+  "_5_steps_upstream_number_of_peaks",
   { data_type => "real", is_nullable => 1 },
-  "_4kb_upstream_number_of_peaks",
+  "_4_steps_upstream_number_of_peaks",
   { data_type => "real", is_nullable => 1 },
-  "_3kb_upstream_number_of_peaks",
+  "_3_steps_upstream_number_of_peaks",
   { data_type => "real", is_nullable => 1 },
-  "_2kb_upstream_number_of_peaks",
+  "_2_steps_upstream_number_of_peaks",
   { data_type => "real", is_nullable => 1 },
-  "_1kb_upstream_number_of_peaks",
+  "_1_steps_upstream_number_of_peaks",
   { data_type => "real", is_nullable => 1 },
 );
 
@@ -174,7 +156,7 @@ __PACKAGE__->belongs_to(
   "genome",
   "PeaksToGenes::Schema::Result::AvailableGenome",
   { id => "genome_id" },
-  { is_deferrable => 1, on_delete => "CASCADE", on_update => "CASCADE" },
+  { is_deferrable => 0, on_delete => "NO ACTION", on_update => "CASCADE" },
 );
 
 =head2 name
@@ -189,12 +171,12 @@ __PACKAGE__->belongs_to(
   "name",
   "PeaksToGenes::Schema::Result::Experiment",
   { id => "name" },
-  { is_deferrable => 1, on_delete => "CASCADE", on_update => "CASCADE" },
+  { is_deferrable => 0, on_delete => "CASCADE", on_update => "NO ACTION" },
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07025 @ 2012-12-14 17:46:40
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:K4EHdZbjdKsZV7Q+u2sD9w
+# Created by DBIx::Class::Schema::Loader v0.07036 @ 2013-08-02 12:42:28
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:vodDzeD41DucaLKcK0oBcg
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

@@ -18,21 +18,13 @@
 
 package PeaksToGenes::Delete 0.001;
 
-use Moose;
+use Moose::Role;
 use Carp;
+use FindBin;
+use lib "$FindBin::Bin/../lib";
 use Data::Dumper;
 
-has name	=>	(
-	is			=>	'ro',
-	isa			=>	'Str',
-	required	=>	1,
-);
-
-has schema	=>	(
-	is			=>	'ro',
-	isa			=>	'PeaksToGenes::Schema',
-	required	=>	1,
-);
+with 'PeaksToGenes::Database';
 
 sub seek_and_destroy {
 	my $self = shift;
@@ -52,8 +44,8 @@ sub seek_and_destroy {
 
 		# Loop through the tables, and delete the rows where the data
 		# corresponds to the table
-		foreach my $table (qw(UpstreamNumberOfPeaks TranscriptNumberOfPeaks
-			GeneBodyNumberOfPeaks DownstreamNumberOfPeaks) ) {
+        foreach my $table ('UpstreamNumberOfPeaks', 'TranscriptNumberOfPeaks',
+            'GeneBodyNumberOfPeaks', 'DownstreamNumberOfPeaks' ) {
 			my $result_set = $self->schema->resultset($table)->search(
 				{
 					name	=>	$experiment_result_set->id

@@ -31,18 +31,18 @@ use Carp;
 use Moose::Util::TypeConstraints;
 use FindBin;
 use lib "$FindBin::Bin/../lib";
-use PeaksToGenes::Schema;
 use PeaksToGenes::Annotate;
 use PeaksToGenes::Update;
 use PeaksToGenes::Contrast;
 use PeaksToGenes::SignalRatio;
-use PeaksToGenes::Delete;
-use PeaksToGenes::List;
 use PeaksToGenes::Matrix;
 use File::Which;
 use Data::Dumper;
 
 with 'MooseX::Getopt';
+with 'PeaksToGenes::List';
+with 'PeaksToGenes::Delete';
+with 'PeaksToGenes::Database';
 
 =head1 SYNOPSIS
 
@@ -149,20 +149,6 @@ has biserial	=>	(
 	documentation	=>	'Contrast Mode only. Set this mode to calculate the point biserial correlation coefficient in contrast mode',
 );
 
-has _schema	=>	(
-	is			=>	'ro',
-	isa			=>	'PeaksToGenes::Schema',
-	default		=>	sub {
-		my $self = shift;
-		my $dsn = "dbi:SQLite:$FindBin::Bin/../db/peakstogenes.db";
-		my $schema = PeaksToGenes::Schema->connect($dsn, '', '', {
-				cascade_delete	=>	1});
-		return $schema;
-	},
-	required	=>	1,
-	reader		=>	'schema',
-);
-
 has genome	=>	(
 	is				=>	'ro',
 	isa				=>	'Str',
@@ -170,6 +156,16 @@ has genome	=>	(
 	lazy			=>	1,
 	documentation	=>	"The RefSeq genome string corresponding to the data you are working with (hg19, mm9, dm3, etc.)",
 	default			=>	sub { croak "\n\nYou must provide the genome corresponding to your experiment.\n\n"},
+);
+
+has step_size   =>  (
+    is              =>  'ro',
+    isa             =>  'Int',
+    predicate       =>  'has_step_size',
+    documentation   =>  "The size of the windows to be used outside of gene " .
+    "bodies and to normalize the length of intra-gene intervals to. By default "
+    . "this value is dynamically generated based on the genome. (Update mode "
+    . "only)",
 );
 
 has bed_file	=>	(
@@ -269,28 +265,11 @@ sub execute {
 	} elsif ( $self->list ) {
 
 		# Run in list mode
-
-		# Create an instance of PeaksToGenes::List and run the
-		# PeaksToGenes::List::list_all_experiments subroutine to list all
-		# the experiments in the PeaksToGenes database
-		my $list = PeaksToGenes::List->new(
-			schema	=>	$self->schema
-		);
-
-		$list->list_all_experiments;
+		$self->list_all_experiments;
 	} elsif ( $self->delete ) {
 
 		# Run in delete mode
-
-		# Create an instance of PeaksToGenes::Delete and run the
-		# PeaksToGenes::Delete::seek_and_destroy subroutine to delete the
-		# dataset from the PeaksToGenes database
-		my $delete = PeaksToGenes::Delete->new(
-			schema	=>	$self->schema,
-			name	=>	$self->name,
-		);
-
-		$delete->seek_and_destroy;
+		$self->seek_and_destroy;
 	} elsif ( $self->update ) {
 
 		# Run in update mode
@@ -298,13 +277,22 @@ sub execute {
 		# Create an instance of PeaksToGenes::Update and run the
 		# PeaksToGenes::Update::update subroutine to fetch, create, and
 		# install the required files for PeaksToGenes
-		my $update = PeaksToGenes::Update->new(
-			schema		=>	$self->schema,
-			genome		=>	$self->genome,
-			processors	=>	$self->processors,
-		);
+        if ( $self->has_step_size ) {
+            my $update = PeaksToGenes::Update->new(
+                genome		=>	$self->genome,
+                processors	=>	$self->processors,
+                window_size   =>  $self->step_size,
+            );
 
-		$update->update;
+            $update->update;
+        } else {
+            my $update = PeaksToGenes::Update->new(
+                genome		=>	$self->genome,
+                processors	=>	$self->processors,
+            );
+
+            $update->update;
+        }
 
 	} elsif ( $self->annotate ) {
 

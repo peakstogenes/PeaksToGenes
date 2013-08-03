@@ -96,7 +96,7 @@ sub get_genes {
 	# RefSeq accessions not found in the list of accessions for the
 	# user-defined genome.
 	my ($valid_test_ids, $invalid_test_accessions) =
-	$self->extract_genes($self->test_genes_fh, $all_genes_result_set);
+	$self->extract_genes($test_accessions, $all_genes_result_set);
 
 	# If the PeaksToGenes::Contrast::Genes::background_genes_fh	has been
 	# set, extract the valid and invalid accessions using
@@ -104,8 +104,10 @@ sub get_genes {
 	# PeaksToGenes::Contrast::Genes::default_background subroutine to
 	# define a background of all genes not defined as test genes
 	if ( $self->background_genes_fh ) {
+		my $background_accessions =
+		$self->extract_accessions($self->background_genes_fh);
 		my ($valid_background_ids, $invalid_background_accessions) =
-		$self->extract_genes($self->background_genes_fh,
+		$self->extract_genes($background_accessions,
 			$all_genes_result_set);
 
 		# Remove genes from the background list which appear in the test
@@ -137,8 +139,10 @@ sub extract_accessions {
 	while (<$file>) {
 		my $line = $_;
 		chomp($line);
+        $line =~ s/\s//g;
 		$accessions_hash->{$line} = 1;
 	}
+    close $file;
 
 	return $accessions_hash;
 }
@@ -176,7 +180,7 @@ sub all_genes {
 }
 
 sub extract_genes {
-	my ($self, $fh, $all_genes_result_set) = @_;
+	my ($self, $test_genes, $all_genes_result_set) = @_;
 
 	# Pre-declare Array Refs for the valid ID and the invalid accessions
 	my $valid_ids = [];
@@ -186,12 +190,8 @@ sub extract_genes {
 	# extract the IDs from the result set. If found, push the ID onto the
 	# valid_ids Array Ref, if not found push the accession onto the
 	# invalid_accessions Array Ref
-	open my $file, "<", $fh or croak "Could not read from $fh please check"
-	. " that this is a readable file $! \n\n";
-	while (<$file>) {
-		my $accession = $_;
-		chomp($accession);
-		my $transcript_id;
+    my $transcript_id = '';
+    foreach my $accession ( keys %{$test_genes} ) {
 	   eval { 
 		   $transcript_id = $all_genes_result_set->find(
 				{

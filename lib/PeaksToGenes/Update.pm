@@ -22,8 +22,10 @@ use Moose;
 use Carp;
 use FindBin;
 use lib "$FindBin::Bin/../lib";
-use PeaksToGenes::Update::UCSC;
 use Data::Dumper;
+
+with 'PeaksToGenes::Database';
+with 'PeaksToGenes::Update::UCSC';
 
 =head1 NAME
 
@@ -35,7 +37,7 @@ Version 0.001
 
 =cut
 
-=head1 SYNOPSIS
+=head1 DESCRIPTION
 
 This module is called by the main PeaksToGenes module. It is used to
 interact with the UCSC Genome Browser tables to download the minimal
@@ -53,47 +55,56 @@ using the PeaksToGenes::Update class.
 
 =cut
 
-has schema	=>	(
-	is			=>	'ro',
-	isa			=>	'PeaksToGenes::Schema',
-	required	=>	1,
-);
-
 has genome	=>	(
 	is			=>	'ro',
 	isa			=>	'Str',
 	required	=>	1,
 );
 
+=head2 window_size
+
+This Moose attribute holds the integer value for the size of the steps the user
+would like to set for iterating outside of the genes and normalizing to within
+the gene bodies.
+
+=cut
+
+has window_size   =>  (
+    is          =>  'ro',
+    isa         =>  'Int',
+    predicate   =>  'has_window_size',
+);
+
 =head1 SUBROUTINES/METHODS
 
 =head2 update
 
-This is the main subroutine called by the PeaksToGenes module.
-It will delete any existing instances of the user-defined genome
-in the AvailableGenomes database. Download the required files from
-the UCSC Genome Browser. Create the remaining required index files.
-Finally, it will update the AvailableGenomes database.
+This is the main subroutine called by the PeaksToGenes module.  It will delete
+any existing instances of the user-defined genome in the AvailableGenomes
+database. Download the required files from the UCSC Genome Browser. Create the
+remaining required index files.  Finally, it will update the AvailableGenomes
+database.
 
 =cut
 
 sub update {
 	my $self = shift;
 
-	# Create an instance on PeaksToGenes::Update::UCSC
-	my $ucsc = PeaksToGenes::Update::UCSC->new(
-		genome	=>	$self->genome,
-	);
+    # Run the PeaksToGenes::Update::UCSC::set_genome_and_step_size subroutine
+    $self->has_window_size ? 
+    $self->set_genome_and_step_size($self->genome, $self->window_size) :
+    $self->set_genome_and_step_size($self->genome);
 
 	# Run the PeaksToGenes::Update::UCSC fetch_tables subroutine
 	# to download the minimal base tables for the user-defined
 	# genome
-	my ($base_files, $chromosome_sizes_file) = $ucsc->fetch_tables;
+	my ($genome_string, $base_files, $chromosome_sizes_file) = $self->fetch_tables;
 
 	# Run the create_statement subroutine to iterate through the base files
 	# and extract the relative location of the index files using a compiled
 	# regular expression. 
-	my $available_genomes_insert = $self->create_statement($base_files);
+    my $available_genomes_insert = $self->create_statement($genome_string,
+        $base_files);
 
 	# Make a call to the update_database subroutine to insert the lines
 	# into the database and update the chromosome sizes tables.
@@ -107,17 +118,20 @@ sub update {
 }
 
 sub create_statement {
-	my ($self, $base_files) = @_;
+    my $self = shift;
+    my $genome = shift;
+    my $file_names = shift;
+    my ($genome_name, $step_size) = split(/-/, $genome);
 	# Create a Hash Ref to insert into the available_genomes table
 	my $available_genomes_insert = {
-		genome	=>	$self->genome,
+		genome	    =>	$genome,
+        step_size   =>  $step_size,
 	};
 	# Create a stored regular expression to extract the base table names
 	# from each file
-	my $genome = $self->genome;
 	my $regex_search = qr/static\/($genome)_Index\/($genome)(_.+?)\.bed$/;
 	# Iterate through the files created and add them to the insert statement
-	foreach my $file_string (@$base_files) {
+	foreach my $file_string (@{$file_names}) {
 		if ($file_string =~ m/$regex_search/) {
 			$available_genomes_insert->{lc($3) . "_peaks_file"} = $file_string;
 		} else {
@@ -140,7 +154,7 @@ sub update_database {
 		}
 	);
 	return ($available_genome_insert_result->id,
-		$available_genome_insert_result->_1kb_upstream_peaks_file);
+		$available_genome_insert_result->_1_steps_upstream_peaks_file);
 }
 
 sub update_transcripts {
