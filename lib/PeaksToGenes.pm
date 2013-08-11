@@ -368,7 +368,6 @@ sub execute {
 			ip_file			=>	$self->ip_file,
 			input_file		=>	$self->input_file,
 			scaling_factor	=>	$self->scaling_factor,
-			schema			=>	$self->schema,
 			name			=>	$self->name,
 			genome			=>	$self->genome,
 			processors		=>	$self->processors,

@@ -277,28 +277,28 @@ has genome_info	=>	(
 	},
 );
 
-=head2 chromosome_sizes
+=head2 chromosome_sizes_hash
 
 This Moose attribute holds a Hash Ref of chromosome sizes fetched from the UCSC
 MySQL server.
 
 =cut
 
-has chromosome_sizes    =>  (
+has chromosome_sizes_hash    =>  (
     is          =>  'ro',
     isa         =>  'HashRef',
-    predicate   =>  'has_chromosome_sizes',
-    writer      =>  '_set_chromosome_sizes'
+    predicate   =>  'has_chromosome_sizes_hash',
+    writer      =>  '_set_chromosome_sizes_hash'
 );
 
-before 'chromosome_sizes'   =>  sub {
+before 'chromosome_sizes_hash'   =>  sub {
     my $self = shift;
-    unless ( $self->has_chromosome_sizes ) {
-        $self->_set_chromosome_sizes($self->_get_chromosome_sizes);
+    unless ( $self->has_chromosome_sizes_hash ) {
+        $self->_set_chromosome_sizes_hash($self->_get_chromosome_sizes_hash);
     }
 };
 
-sub _get_chromosome_sizes    {
+sub _get_chromosome_sizes_hash    {
     my $self = shift;
 
     # Connect to the UCSC MySQL Browser
@@ -579,10 +579,10 @@ sub _define_relative_coordinates    {
             # the constraints of the chromosome.
             if (($downstream_extended_start > 0) && 
                 ($downstream_extended_start <=
-                    $self->chromosome_sizes->{$self->genomic_coordinates->{$transcript}{chrom}})
+                    $self->chromosome_sizes_hash->{$self->genomic_coordinates->{$transcript}{chrom}})
                 && ($downstream_extended_stop > 0) && 
                 ($downstream_extended_start <=
-                    $self->chromosome_sizes->{$self->genomic_coordinates->{$transcript}{chrom}}))
+                    $self->chromosome_sizes_hash->{$self->genomic_coordinates->{$transcript}{chrom}}))
             {
 
                 # Add the coordinates to the Array Ref
@@ -597,10 +597,10 @@ sub _define_relative_coordinates    {
             }
             if (($upstream_extended_start > 0) && 
                 ($upstream_extended_start <= 
-                    $self->chromosome_sizes->{$self->genomic_coordinates->{$transcript}{chrom}})
+                    $self->chromosome_sizes_hash->{$self->genomic_coordinates->{$transcript}{chrom}})
                 && ($upstream_extended_stop > 0) && 
                 ($upstream_extended_start <=
-                    $self->chromosome_sizes->{$self->genomic_coordinates->{$transcript}{chrom}}))
+                    $self->chromosome_sizes_hash->{$self->genomic_coordinates->{$transcript}{chrom}}))
             {
                 # Add the coordinates to the Array Ref
                 push( @{$relative_coordinates_hash->{Upstream}{$i}}, 
@@ -1031,11 +1031,11 @@ sub _write_chromosome_sizes {
 	# Convert the chromosome sizes information into an Array Ref for easier
 	# printing
 	my $chromsome_sizes_array = [];
-	foreach my $chr (keys %{$self->chromosome_sizes}) {
+	foreach my $chr (keys %{$self->chromosome_sizes_hash}) {
 		push(@$chromsome_sizes_array, 
             join("\t", 
                 $chr,
-				$self->chromosome_sizes->{$chr}
+				$self->chromosome_sizes_hash->{$chr}
             )
 		);
 	}

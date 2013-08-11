@@ -17,13 +17,14 @@
 # along with peaksToGenes.  If not, see <http://www.gnu.org/licenses/>.
 
 package PeaksToGenes::Annotate::BedTools 0.001;
-use Moose;
+use Moose::Role;
 use Carp;
 use FindBin;
 use lib "$FindBin::Bin/../lib";
-use PeaksToGenes::Update::UCSC;
 use Parallel::ForkManager;
 use Data::Dumper;
+
+with 'PeaksToGenes::Database';
 
 =head1 NAME
 
@@ -50,12 +51,6 @@ This section contains objects that are added to an instance of
 PeaksToGenes::Annotate::BedTools.
 
 =cut
-
-has schema	=>	(
-	is			=>	'ro',
-	isa			=>	'PeaksToGenes::Schema',
-	required	=>	1,
-);
 
 has genome	=>	(
 	is			=>	'ro',
@@ -135,9 +130,9 @@ the genome defined by the user.
 sub check_bed_file {
 	my $self = shift;
 
-	# Fetch the chromosome sizes from the database by calling
-	# PeaksToGenes::Annotate::BedTools::chromosome_sizes
-	my $chromosome_sizes = $self->chromosome_sizes;
+    # Fetch the chromosome sizes for the given genome from the chromosome_sizes
+    # attribute in PeaksToGenes::Database
+	my $chromosome_sizes = $self->chromosome_sizes->{$self->genome};
 
 	# Pre-declare a line number to return useful errors to the user
 	my $line_number = 1;
