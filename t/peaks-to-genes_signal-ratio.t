@@ -17,6 +17,7 @@
 #===============================================================================
 
 use Modern::Perl;
+use IPC::Run3;
 use FindBin;
 use lib "$FindBin::Bin/../lib";
 use Data::Dumper;
@@ -24,6 +25,19 @@ use Data::Dumper;
 use Test::More;
 
 BEGIN {
+
+    # Delete the experiment named 'msl2_s2_cells' if it exists
+    #
+    # Create a string to be executed by IPC::Run3
+    my $delete_command = join(" ",
+        "$FindBin::Bin/../bin/peakstogenes.pl",
+        '--delete',
+        '--name',
+        'msl2_s2_cells'
+    );
+
+    # Execute the command with run3
+    run3 $delete_command, undef, undef, undef;
     
     # Make sure that PeaksToGenes::SignalRatio can be used
     use_ok('PeaksToGenes::SignalRatio');
@@ -51,30 +65,13 @@ BEGIN {
 
     # Store the split_and_merged_ip_files Moose attribute into a local variable
     # and make sure the contents are returned correctly.
-    my $split_and_merged_ip_hash = $signal_ratio->split_ip_files;
-    isa_ok($split_and_merged_ip_hash, 'HASH');
-
-    # Run a subtest to make sure the Hash Ref returned has the correct items
-    subtest 'check_split_and_merged_ip_hash'    =>  sub {
-        foreach my $chr ( keys %{$split_and_merged_ip_hash} ) {
-            ok( 
-                $signal_ratio->chromosome_sizes->{'dm3-300'}{$chr}, 
-                'The chromosome ' . $chr . ' is valid for dm3'
-            );
-            ok(
-                -r $split_and_merged_ip_hash->{$chr} &&
-                -s $split_and_merged_ip_hash->{$chr},
-                'The file ' . $split_and_merged_ip_hash->{$chr} .
-                ' is readable'
-            );
-        }
-    };
+    my $split_and_merged_ip_hash = $signal_ratio->sorted_ip_file;
 
     # Run the annotate_signal_ratio function to return a Hash Ref of signal
     # ratios and test that the returned data structure is correct
     my $indexed_signal_ratios = $signal_ratio->annotate_signal_ratio(
-        $signal_ratio->split_ip_files,
-        $signal_ratio->split_input_files,
+        $signal_ratio->sorted_ip_file,
+        $signal_ratio->sorted_input_file,
         $signal_ratio->genome,
         $signal_ratio->processors,
         $signal_ratio->scaling_factor,
@@ -85,7 +82,32 @@ BEGIN {
     # BED-format files
     $signal_ratio->remove_temporary_files;
 
-    print Dumper $indexed_signal_ratios;
+    # Run the parse_and_store function to insert the information into the
+    # PeaksToGenes database
+    $signal_ratio->parse_and_store(
+        $indexed_signal_ratios,
+        $signal_ratio->genome,
+        $signal_ratio->name,
+    );
+    
+    # Delete the entered data
+    run3 $delete_command, undef, undef, undef;
+
+    # Create an instance of PeaksToGenes::SignalRatio
+    my $signal_ratio_full = PeaksToGenes::SignalRatio->new(
+        name            =>  'msl2_s2_cells',
+        genome          =>  'dm3-300',
+        scaling_factor  =>  1.08840448781593,
+        ip_file         =>  "$FindBin::Bin/../Temp_Data/MSL_ChIP_S2_Cells_Combined_converted.bed",
+        input_file      =>  "$FindBin::Bin/../Temp_Data/MSL_Input_S2_Cells_Combined_converted.bed",
+        processors      =>  4,
+    );
+
+    # Install the data again using the 'index_signal_ratio' function
+    $signal_ratio_full->index_signal_ratio;
+
+    # Delete the entered data to finish
+    run3 $delete_command, undef, undef, undef;
 }
 
 done_testing();

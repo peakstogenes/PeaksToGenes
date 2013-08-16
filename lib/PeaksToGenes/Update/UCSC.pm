@@ -20,6 +20,10 @@ package PeaksToGenes::Update::UCSC 0.001;
 use Moose::Role;
 use Carp;
 use Statistics::Descriptive;
+use IPC::Run3;
+use File::Copy;
+use File::Basename;
+use File::Which;
 use FindBin;
 use lib "$FindBin::Bin/../lib";
 use PeaksToGenes::UCSC;
@@ -906,6 +910,9 @@ sub _write_relative_coordinates_files {
         );
         close $decile_out;
 
+        # Run the _sort_file on the newly written file
+        $self->_sort_file($file_strings->[13+$i+1]);
+
         # Print the upstream file
         open my $upstream_out, ">", $file_strings->[9-$i] or croak
         "\n\nCould not write to " . $file_strings->[9-$i] . " $!\n\n";
@@ -914,6 +921,9 @@ sub _write_relative_coordinates_files {
         );
         close $upstream_out;
 
+        # Run the _sort_file on the newly written file
+        $self->_sort_file($file_strings->[9-$i]);
+
         # Print the downstream file
         open my $downstream_out, ">", $file_strings->[24+$i] or croak
         "\n\nCould not write to " . $file_strings->[24+1] . " $!\n\n";
@@ -921,6 +931,9 @@ sub _write_relative_coordinates_files {
             @{$self->relative_coordinates->{Downstream}{$i}}
         );
         close $downstream_out;
+
+        # Run the _sort_file on the newly written file
+        $self->_sort_file($file_strings->[24+$i]);
     }
 
     # Define a Hash Ref that links the position in the file_strings to the
@@ -941,9 +954,54 @@ sub _write_relative_coordinates_files {
             @{$self->relative_coordinates->{$relative_transcript_hash->{$pos}}}
         );
         close $out_file;
+
+        # Run the _sort_file subroutine on the file
+        $self->_sort_file($file_strings->[$pos]);
     }
 
 	return $file_strings;
+}
+
+=head2 _sort_file
+
+This private subroutine is called to sort a BED-format index file using the
+sortBed utility from BedTools. This subroutine creates a temporary sorted file,
+and then overwrites the unsorted file with the sorted one. If these operations
+are unsuccessful than execution is killed.
+
+=cut
+
+sub _sort_file  {
+    my $self = shift;
+    my $unsorted_fh = shift;
+
+    # Use File::Basename to extract the filename and directory of the current
+    # file.
+    my ($filename, $directory, $suffix) = fileparse($unsorted_fh, ".bed");
+
+    # Define a temporary string for the sorted file
+    my $temp_sorted_fh = $directory . '/' . $filename . '_sorted.bed';
+
+    # Define a string for executing sortBed
+    my $execute_sortbed = join(" ",
+        which('sortBed'),
+        '-i',
+        $unsorted_fh,
+        '>',
+        $temp_sorted_fh
+    );
+
+    # Use IPC::Run3 to execute the command
+    run3 $execute_sortbed, undef, undef, undef;
+
+    # If the sorted file has been written, move it to the sorted file location.
+    # If either of these things fail, halt execution.
+    if ( -s $temp_sorted_fh ) {
+        move( $temp_sorted_fh, $unsorted_fh ) or croak 
+        "\n\nMoving $temp_sorted_fh to $unsorted_fh failed\n\n";
+    } else {
+        croak "\n\nSorting $unsorted_fh failed.\n\n";
+    }
 }
 
 #sub file_names {

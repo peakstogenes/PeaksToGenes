@@ -135,8 +135,8 @@ sub index_signal_ratio {
     # PeaksToGenes::SignalRatio::BedTools, which returns a Hash Ref of indexed
     # signal ratios
     my $indexed_signal_ratios = $self->annotate_signal_ratio(
-        $self->split_ip_files,
-        $self->split_input_files,
+        $self->sorted_ip_file,
+        $self->sorted_input_file,
         $self->genome,
         $self->processors,
         $self->scaling_factor
@@ -146,19 +146,18 @@ sub index_signal_ratio {
     # were split by chromosome
     $self->remove_temporary_files;
 
-	# Create an instance of PeaksToGenes::Annotate::Database and run the
-	# PeaksToGenes::Annotate::Database::parse_and_store subroutine to
-	# insert the information into the PeaksToGenes database
-#	my $database = PeaksToGenes::Annotate::Database->new(
-#		schema			=>	$self->schema,
-#		indexed_peaks	=>	$indexed_signal_ratios,
-#		name			=>	$self->name,
-#		ordered_index	=>	$genomic_index,
-#		genome			=>	$self->genome,
-#		processors		=>	$self->processors,
-#	);
-#	$database->parse_and_store;
+    # Run the parse_and_store function from PeaksToGenes::Database to parse the
+    # indexed_signal_ratios binding information into an insert statement and
+    # store the information in the PeaksToGenes database
+    $self->parse_and_store(
+        $indexed_signal_ratios,
+        $self->genome,
+        $self->name,
+    );
 
+    # Inform the user that operation is complete
+    print "\n\nFinished installing the signal ratio values for the experiment: "
+    . $self->name . " into the PeaksToGenes database.\n\n";
 }
 
 =head2 check_input_parameters
@@ -195,53 +194,53 @@ sub check_scaling_factor {
     }
 }
 
-=head2 split_and_merged_ip_files
+=head2 sorted_ip_file
 
 This Moose attribute holds a Hash Ref of the paths to the IP files that have
-been split by chromosome and merged using the mergeBed utility.
+been split by chromosome and sorted using the sort utility from BedTools.
 
 =cut
 
-has split_ip_files   =>  (
+has sorted_ip_file   =>  (
     is          =>  'ro',
-    isa         =>  'HashRef',
-    predicate   =>  'has_split_ip_files',
-    writer      =>  '_set_split_ip_files',
+    isa         =>  'Str',
+    predicate   =>  'has_sorted_ip_file',
+    writer      =>  '_set_sorted_ip_file',
 );
 
-before  'split_ip_files' =>  sub {
+before  'sorted_ip_file' =>  sub {
     my $self = shift;
-    unless ($self->has_split_ip_files) {
-        my $split_files = $self->_check_and_split_files;
-        $self->_set_split_ip_files($split_files->{ip_files});
-        $self->_set_split_input_files($split_files->{input_files});
+    unless ($self->has_sorted_ip_file) {
+        my $split_files = $self->_check_and_sort_files;
+        $self->_set_sorted_ip_file($split_files->{ip_file});
+        $self->_set_sorted_input_file($split_files->{input_file});
     }
 };
 
-=head2 split_and_merged_input_files
+=head2 sorted_input_file
 
 This Moose attribute holds a Hash Ref of the paths to the IP files that have
-been split by chromosome and merged using the mergeBed utility.
+been split by chromosome and merged using the sort utility from BedTools.
 
 =cut
 
-has split_input_files   =>  (
+has sorted_input_file   =>  (
     is          =>  'ro',
-    isa         =>  'HashRef',
-    predicate   =>  'has_split_input_files',
-    writer      =>  '_set_split_input_files',
+    isa         =>  'Str',
+    predicate   =>  'has_sorted_input_file',
+    writer      =>  '_set_sorted_input_file',
 );
 
-before  'split_input_files' =>  sub {
+before  'sorted_input_file' =>  sub {
     my $self = shift;
-    unless ($self->has_split_input_files) {
-        my $split_files = $self->_check_and_split_files;
-        $self->_set_split_input_files($split_files->{input_files});
-        $self->_set_split_ip_files($split_files->{ip_files});
+    unless ($self->has_sorted_input_file) {
+        my $split_files = $self->_check_and_sort_files;
+        $self->_set_sorted_input_file($split_files->{input_file});
+        $self->_set_sorted_ip_file($split_files->{ip_file});
     }
 };
 
-=head2 _check_and_split_files
+=head2 _check_and_sort_files
 
 This private subroutine is called to fill the Moose attributes for split and
 merged IP and Input files, respectively. This subroutine returns an anonymous
@@ -251,14 +250,14 @@ indexed by chromosome string.
 
 =cut
 
-sub _check_and_split_files    {
+sub _check_and_sort_files    {
     my $self = shift;
 
     # Create an instance of Parallel::ForkManager with two threads.
     my $pm = Parallel::ForkManager->new(2);
 
     # Pre-declare a Hash Ref to hold the split and merged files
-    my $split_files = {};
+    my $sorted_files = {};
 
     # Define a subroutine to be run at the end of each thread
     $pm->run_on_finish(
@@ -268,19 +267,19 @@ sub _check_and_split_files    {
 
             # Check to make sure everything has been returned correctly
             if ( $data_structure && $data_structure->{file_type}
-                && $data_structure->{files} ) {
+                && $data_structure->{file} ) {
 
                 # Store the information in the split_and_merged_files Hash Ref
-                $split_files->{$data_structure->{file_type}} =
-                $data_structure->{files};
+                $sorted_files->{$data_structure->{file_type}} =
+                $data_structure->{file};
             }
         }
     );
 
     # Define a Hash Ref to map the file types
     my $file_type_map = {
-        ip_files    =>  $self->ip_file,
-        input_files =>  $self->input_file,
+        ip_file    =>  $self->ip_file,
+        input_file =>  $self->input_file,
     };
 
     # Iterate through the file types and start a new thread for each file type.
@@ -294,43 +293,31 @@ sub _check_and_split_files    {
         # Start a new thread of one is available
         $pm->start and next;
 
-        # Pre-declare a Hash Ref to hold the split files
-        my $split_files = {};
+        # Define a string for the temporary file that will hold the sorted
+        # BED-format file for the current user-defined IP or Input file.
+        my $sorted_dir = "$FindBin::Bin/../tmp" . '/' . $self->name . '/' .
+        $file_type;
+        make_path($sorted_dir);
+        my $sorted_fh = $sorted_dir . '/sorted.bed';
 
-        # Iterate through the chromosomes defined in chromosome_sizes. Create a
-        # file path for each chromosome for the given file type in the tmp
-        # directory.
-        foreach my $chr ( keys %{$self->chromosome_sizes->{$self->genome}} ) {
-
-            # Make a path to where the temporary file will be stored
-            my $current_chr_dir = "$FindBin::Bin/../tmp/" . $self->name . '/' . $file_type . '/' . $chr;
-            make_path( $current_chr_dir );
-
-            # Define a file path for the current chromosome
-            my $current_chr_fh = $current_chr_dir . '/split_reads.bed';
-
-            # If the current chromosome file happens to exist -- delete it.
-            if ( -e $current_chr_fh ) {
-                unlink ($current_chr_fh);
-            }
-
-            # Store the string in the split_files Hash Ref -- indexed by
-            # chromosome
-            $split_files->{$chr} = $current_chr_fh;
-        }
-
-        # Run the _check_and_split subroutine which returns a Hash Ref of the
-        # file paths of files indexed by chromosome
-        my $split_file_paths = $self->_check_and_split(
+        # Run the _check_BED_file subroutine, which checks to make sure the
+        # user-define BED format reads files are correct.
+        $self->_check_BED_file(
             $file_type_map->{$file_type}, 
-            $split_files 
+        );
+
+        # Run the _sort_bed_files subroutine to return a Hash Ref of files that
+        # have been split by chromosome and sorted by chromosomal position.
+        my $sorted_file_path = $self->_sort_bed_files( 
+            $file_type_map->{$file_type},
+            $sorted_fh
         );
 
         # End the current thread and return the data
         $pm->finish(0, 
             {
                 file_type   =>  $file_type,
-                files       =>  $split_file_paths,
+                file       =>  $sorted_file_path,
             }
         );
     }
@@ -338,23 +325,19 @@ sub _check_and_split_files    {
     # Make sure all the threads have finished executing
     $pm->wait_all_children;
 
-    return $split_files;
+    return $sorted_files;
 }
 
-=head2 _check_and_split
+=head2 _check_BED_file
 
 This subroutine checks both of the user-defined BED-format files to ensure that
-they are properly formatted and then splits the files by chromosome string.
+they are properly formatted.
 
 =cut
 
-sub _check_and_split {
+sub _check_BED_file {
 	my $self = shift;
     my $bed_fh = shift;
-    my $files_by_chr_hash = shift;
-
-    # Pre-declare a Hash Ref to hold the reads per chromosome
-    my $reads_per_chr_hash = {};
 
     print "\n\nNow checking $bed_fh to ensure that the contents " .
     "are valid\n\n";
@@ -454,56 +437,42 @@ sub _check_and_split {
         }
 
         $line_number++;
-
-        # Now that the line has been checked, add it to the appropriate Array
-        # Ref of reads per chromosome
-        push( @{$reads_per_chr_hash->{$chr}},
-            join("\t",
-                $chr,
-                $start,
-                $stop,
-                $name,
-                $score,
-                $strand
-            )
-        );
-
-        # Test to make sure that the size of the current reads_per_chr_hash
-        # Array ref is less than 5,000,000 reads. If it is, print the reads to
-        # file and empty the Array Ref.
-        if ( scalar (@{$reads_per_chr_hash->{$chr}}) > 5000000 ) {
-
-            # Open the corresponding file for this chromosome from
-            # files_by_chr_hash and write the lines. Be sure to add an extra
-            # newline character.
-            open my $chr_out, ">>", $files_by_chr_hash->{$chr} or croak
-            "\n\nCould not write to " . $files_by_chr_hash->{$chr} . " $!\n\n";
-            print $chr_out join("\n", @{$reads_per_chr_hash->{$chr}}, "\n");
-            close $chr_out;
-
-            # Reset the Array Ref
-            $reads_per_chr_hash->{$chr} = [];
-        }
 	}
+}
 
-    # Iterate through the reads_per_chr_hash and print the remaining reads to
-    # file. There is no need to add an extra newline character to these files.
-    foreach my $chr ( keys %{$reads_per_chr_hash} ) {
+=head2 _sort_bed_files
 
-        # Test to make sure there are reads to be printed
-        if ( scalar ( @{$reads_per_chr_hash->{$chr}} ) ) {
-            # Open the corresponding file from files_by_chr_hash
-            open my $chr_out, ">>", $files_by_chr_hash->{$chr} or croak
-            "\n\nCould not write to " . $files_by_chr_hash->{$chr} . " $!\n\n";
-            print $chr_out join("\n", @{$reads_per_chr_hash->{$chr}});
-            close $chr_out;
+This private subroutine is called to run the sortBed utility from BedTools to
+sort the BED files. This subroutine is passed a file path and returns a file
+path that has been sorted.
 
-            # Reset the Array Ref
-            $reads_per_chr_hash->{$chr} = [];
-        }
+=cut
+
+sub _sort_bed_files {
+    my $self = shift;
+    my $unsorted_fh = shift;
+    my $sorted_fh = shift;
+
+    # Define a string to be executed by IPC::Run3 to run sortBed
+    my $sort_command = join(" ",
+        which('sortBed'),
+        '-i',
+        $unsorted_fh,
+        '>',
+        $sorted_fh
+    );
+
+    # Run the sortBed command
+    run3 $sort_command, undef, undef, undef;
+
+    # If the sorted file exists, return the sorted file, otherwise die
+    if ( -s $sorted_fh ) {
+        return $sorted_fh;
+    } else {
+        croak "\n\nThere was a problem sorting the file: $unsorted_fh.\n\n";
     }
 
-    return $files_by_chr_hash;
+    return $sorted_fh;
 }
 
 =head2 remove_temporary_files
@@ -523,5 +492,7 @@ sub remove_temporary_files  {
     # temporary directory
     remove_tree($temp_base_dir);
 }
+
+__PACKAGE__->meta->make_immutable;
 
 1;

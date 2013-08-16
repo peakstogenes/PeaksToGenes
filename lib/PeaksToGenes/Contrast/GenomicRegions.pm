@@ -18,242 +18,173 @@
 
 package PeaksToGenes::Contrast::GenomicRegions 0.001;
 
-use Moose;
+use Moose::Role;
 use Carp;
-use PeaksToGenes::Annotate::FileStructure;
+use FindBin;
+use lib "$FindBin::Bin/../lib";
 use Parallel::ForkManager;
 use Data::Dumper;
 
-has schema	=>	(
-	is			=>	'ro',
-	isa			=>	'PeaksToGenes::Schema',
-	required	=>	1,
-);
+with 'PeaksToGenes::Database';
 
-has test_genes	=>	(
-	is			=>	'ro',
-	isa			=>	'ArrayRef[Int]',
-	required	=>	1,
-);
+=head1 NAME
 
-has background_genes	=>	(
-	is					=>	'ro',
-	isa					=>	'ArrayRef[Int]',
-	required			=>	1,
-);
+PeaksToGenes::Contrast::GenomicRegions
 
-has name	=>	(
-	is			=>	'ro',
-	isa			=>	'Str',
-	required	=>	1,
-);
+=cut
+
+=head1 AUTHOR
+
+Jason R. Dobson, peakstogenes@gmail.com
+
+=cut
+
+=head1 DESCRIPTION
+
+This role is consumed by PeaksToGenes::Contrast and interacts with the
+PeaksToGenes database to create a data structure of binding information for the
+user-defined experiment that will be used for contrast testing.
+
+=cut
+
+=head2 table_dispatch
+
+This Moose attribute holds a Hash Ref of mappings between relative location
+strings and the PeaksToGenes database tables in which they are annotated.
+
+=cut
 
 has table_dispatch	=>	(
 	is			=>	'ro',
-	isa			=>	'HashRef[HashRef[Str]]',
-	required	=>	1,
-	init_arg	=>	undef,
-	default		=>	sub {
-		my $self = shift;
-		my $table_dispatch = {
-			'_5prime_utr'	=>	{
-				'number_of_peaks'	=>	'TranscriptNumberOfPeaks',
-			},
-			'_3prime_utr'	=>	{
-				'number_of_peaks'	=>	'TranscriptNumberOfPeaks',
-			},
-			'_exons'	=>	{
-				'number_of_peaks'	=>	'TranscriptNumberOfPeaks',
-			},
-			'_introns'	=>	{
-				'number_of_peaks'	=>	'TranscriptNumberOfPeaks',
-			},
-		};
-		for (my $i = 1; $i <= 10; $i++) {
-			$table_dispatch->{'_' . $i . 'kb_upstream'} = {
-				'number_of_peaks'	=>	'UpstreamNumberOfPeaks',
-			};
-			$table_dispatch->{'_' . $i . 'kb_downstream'} = {
-				'number_of_peaks'	=>	'DownstreamNumberOfPeaks',
-			};
-		}
-		for (my $i = 0; $i < 100; $i +=10) {
-			$table_dispatch->{'_gene_body_' . $i . '_to_' . ($i+10)} = {
-				'number_of_peaks'	=>	'GeneBodyNumberOfPeaks',
-			}
-		}
-		return $table_dispatch;
-	},
+	isa			=>	'HashRef',
+    predicate   =>  'has_table_dispatch',
+    writer      =>  '_set_table_dispatch',
 );
 
-has base_regex	=>	(
-	is			=>	'ro',
-	isa			=>	'Str',
-	required	=>	1,
-	default		=>	sub {
-		my $self = shift;
-		# Create a regular expression string to be used to match the
-		# location of each index file.
-		my $base_regex = "\.\.\/" . $self->genome . "_Index\/" .
-		$self->genome;
-		return $base_regex;
-	}
-);
+before  'table_dispatch'    =>  sub {
+    my $self = shift;
+    unless ( $self->has_table_dispatch ) {
+        $self->_set_table_dispatch(
+            $self->_define_table_dispatch
+        );
+    }
+};
 
-has genome	=>	(
-	is			=>	'ro',
-	isa			=>	'Str',
-	required	=>	1,
-);
+=head2 _define_table_dispatch
 
-has processors	=>	(
-	is			=>	'ro',
-	isa			=>	'Int',
-	default		=>	1,
-);
+This private subroutine defines a mapping between relative genomic location
+strings and the PeaksToGenes table in which the data are defined.
 
-sub extract_genomic_regions {
-	my $self = shift;
+=cut
 
-	# Create a Hash Ref of Hash Refs of Hash Refs of Array Refs to hold the
-	# information extracted from the tables by calling
-	# PeaksToGenes::Contrast::GenomicRegions::create_blank_index.
-	my $genomic_regions_structure = $self->create_blank_index;
+sub _define_table_dispatch {
+    my $self = shift;
 
-	# Convert the lists of test genes and background genes into Hash Refs
-	my $test_ids = $self->array_to_hash($self->test_genes);
-	my $background_ids = $self->array_to_hash($self->background_genes);
+    # Define the table to be returned for the transcript locations
+    my $table_dispatch = {
+        'TranscriptNumberOfPeaks'   =>  [
+            '_5prime_utr_number_of_peaks',
+            '_3prime_utr_number_of_peaks',
+            '_exons_number_of_peaks',
+            '_introns_number_of_peaks',
+        ],
+    };
 
-	# Run the PeaksToGenes::Contrast::GenomicRegions::all_regions
-	# subroutine to return Hash Refs of all genomic regions information for
-	# the given data set
-	my $genomic_regions_all_data =
-	$self->all_regions($genomic_regions_structure);
+    # Define the upstream, downstream and gene body locations
+    for (my $i = 0; $i < 10; $i++) {
+        push( @{$table_dispatch->{UpstreamNumberOfPeaks}},
+            '_' . ($i+1) . '_steps_upstream_number_of_peaks'
+        );
+        push( @{$table_dispatch->{DownstreamNumberOfPeaks}},
+            '_' . ($i+1) . '_steps_downstream_number_of_peaks'
+        );
+        push( @{$table_dispatch->{GeneBodyNumberOfPeaks}},
+            '_gene_body_' . ($i*10) . '_to_' . (($i+1)*10) . '_number_of_peaks'
+        );
+    }
 
-	# Run the PeaksToGenes::Contrast::GenomicRegions::get_peaks
-	# subroutine to return an Array Ref of peaks per Kb per genomic region
-	$genomic_regions_structure =
-	$self->get_peaks($genomic_regions_structure, $genomic_regions_all_data,
-		$test_ids, $background_ids);
-
-	return $genomic_regions_structure;
-
+    return $table_dispatch;
 }
 
-sub array_to_hash {
-	my ($self, $array) = @_;
+=head2 all_regions
 
-	# Pre-declare a Hash Ref to hold the ids
-	my $hash = {};
+This subroutine is given an experiment name and returns a Hash Ref of Hash Refs
+of binding data indexed by relative genomic location and transcript ID.
 
-	# Iterate through the array, storing the ids in the Hash Ref
-	foreach my $id (@$array) {
-		$hash->{$id} = 1;
-	}
-
-	return $hash;
-}
-
-sub create_blank_index {
-	my $self = shift;
-
-	# The index will be defined as a follows:
-	# 	Primary Hash Refs:
-	#
-	# 		Test Genes
-	# 		Background Genes
-	#
-	# 		Secondary Hash Refs:
-	#
-	# 			Genomic Regions
-	#
-	# 			Tertiary Hash Refs:
-	#
-	# 				Peak Numbers
-	#
-	# 				Array Refs of Numbers
-	my $genomic_regions_structure = {
-		'test_genes'			=>	{},
-		'background_genes'		=>	{},
-	};
-
-	# Pre-declare the structure for the upstream and downstream genomic
-	# regions
-	foreach my $gene_type (keys %$genomic_regions_structure) {
-		for (my $i = 1; $i <= 10; $i++) {
-			$genomic_regions_structure->{$gene_type}{'_' . $i .
-			'kb_downstream'}{'number_of_peaks'} = [];
-			$genomic_regions_structure->{$gene_type}{'_' . $i .
-			'kb_upstream'}{'number_of_peaks'} = [];
-		}
-		# Pre-declare the structure for the gene body decile regions
-		for (my $i = 0; $i < 100; $i +=10) {
-			$genomic_regions_structure->{$gene_type}{'_gene_body_' . $i .
-			'_to_' . ($i+10)}{'number_of_peaks'} = [];
-		}
-		# Pre-declare the structure for the transcript regions
-		foreach my $location (qw( _5prime_utr _exons _introns _3prime_utr )) {
-			$genomic_regions_structure->{$gene_type}{$location}{'number_of_peaks'}
-			= [];
-		}
-	}
-	return $genomic_regions_structure;
-}
+=cut
 
 sub all_regions {
-	my ($self, $genomic_regions_structure) = @_;
+    my $self = shift;
+    my $experiment_name = shift;
 
 	# Get the experiment id
-	my $experiment_id_search = $self->schema->resultset('Experiment')->find(
-		{
-			experiment	=>	$self->name
-		}
-	);
+	my $experiment_id = $self->experiment_names->{$experiment_name}{id};
 
-	if ( ! $experiment_id_search ) {
-		croak "The experiment name " . $self->name . " was not found in "
-		. "the PeaksToGenes database\n\n";
-	}
-	
-	my $experiment_id = $experiment_id_search->id;
+    # Die if an experiment ID was not found
+    unless ( $experiment_id ) {
+        croak "\n\nCould not find the experiment ID for the experiment: " .
+        "$experiment_name. Please check that you have entered the experiment " .
+        "name correctly and that the experiment you are trying to work with has"
+        .  " been installed in the PeaksToGenes database.\n\n";
+    }
 
 	# Pre-declare a Hash Ref to hold the genomic regions data
 	my $genomic_regions_all_data = {};
 
-	foreach my $location ( keys
-		%{$genomic_regions_structure->{test_genes}}) {
+    # Iterate through the tables defined in the table_dispatch attribute
+    foreach my $table ( keys %{$self->table_dispatch} ) {
 
-		foreach my $table_type ( keys
-			%{$genomic_regions_structure->{test_genes}{$location}}) {
+        # Create a result set for the table by searching for all rows that match
+        # the experiment ID defined above
+        my $experiment_rs = $self->schema->resultset($table)->search(
+            {
+                name    =>  $experiment_id,
+            }
+        );
 
-			# Get the table name from the table dispatch
-			my $table = $self->table_dispatch->{$location}{$table_type};
+        # Expand the result set using HashRefInflator
+        $experiment_rs->result_class('DBIx::Class::ResultClass::HashRefInflator');
 
-			# Get the result set from the PeaksToGenes database
-			# corresponding to the current location and user-defined
-			# experiment
-			my $current_location_result_set =
-			$self->schema->resultset($table)->search(
-				{
-					name	=>	$experiment_id
-				}
-			);
+        # Iterate through the Hash Refs
+        while ( my $experiment_hash = $experiment_rs->next ) {
 
-			$current_location_result_set->result_class('DBIx::Class::ResultClass::HashRefInflator');
-
-			$genomic_regions_all_data->{$location}{$table_type} =
-			$current_location_result_set;
-
-		}
-
-	}
+            # Iterate through the column types and add the data to the
+            # genomic_regions_all_data Hash Ref
+            foreach my $location ( @{$self->table_dispatch->{$table}} ) {
+                if ( defined $experiment_hash->{$location} ) {
+                    
+                    # Add the data indexed by the transcript ID
+                    $genomic_regions_all_data->{$location}{$experiment_hash->{gene}} = $experiment_hash->{$location};
+                }
+            }
+        }
+    }
 
 	return $genomic_regions_all_data;
 }
 
-sub get_peaks {
-	my ($self, $genomic_regions_structure, $genomic_regions_all_data,
-		$test_ids, $background_ids) = @_;
+=head2 separate_binding_regions_by_gene_lists
+
+This subroutine is passed the Hash Ref of binding information produced by running the all_regions subroutine and a Hash Ref of gene lists (that are Hash Refs) defined as:
+
+    test_genes          =>  HashRef of RefSeq IDs and PtG IDs
+    background_genes    =>  HashRef of RefSeq IDs and PtG IDs
+
+=cut
+
+sub separate_binding_regions_by_gene_lists {
+    my $self = shift;
+    my $all_binding_hash = shift;
+    my $gene_lists_hash = shift;
+
+    # Make sure the gene lists Hash was correctly passed in
+    unless ( exists ( $gene_lists_hash->{test_genes} ) && 
+        exists ( $gene_lists_hash->{background_genes} ) ) {
+        croak "\n\nYou must pass an anonymous Hash to the " .
+        "separate_binding_regions_by_gene_lists function that defines two Hash "
+        .  "Refs of Hash Ref gene lists. Please check the POD for how to define"
+        . " these Hash Refs.\n\n";
+    }
 
 	# Create an instance of Parallel::ForkManager with the number of
 	# threads allowed set to the number of processors defined by the user
@@ -329,55 +260,4 @@ sub get_peaks {
 	return $genomic_regions_structure;
 }
 
-sub get_ordered_index {
-	my $self = shift;
-
-	# Create an instance of PeaksToGenes::Annotate::FileStructure in order
-	# to use the
-	# PeaksToGenes::Annotate::FileStructure::get_index_file_names
-	# subroutine to return an Array Ref of file names. These file names
-	# will be used to produce the column names of the structures for the
-	# statistics results
-	my $file_structure = PeaksToGenes::Annotate::FileStructure->new(
-		schema	=>	$self->schema,
-		genome	=>	$self->genome,
-	);
-	my $available_genome_search_result = $file_structure->test_genome;
-	my $genomic_index =
-	$file_structure->get_index_file_names(
-		$available_genome_search_result);
-
-	# Use the PeakToGenes::Contrast::GenomicRegions::parse_file_strings
-	# subroutine to extract the locations from the file strings
-	my $genomic_locations = $self->parse_file_strings($genomic_index);
-
-	return $genomic_locations;
-
-}
-
-sub parse_file_strings {
-	my ($self, $genomic_index) = @_;
-
-	# Pre-define an Array Ref to store the parse locations
-	my $genomic_locations = [];
-
-	# Copy the base regular expression into a scalar
-	my $base_regex = $self->base_regex;
-
-	# Iterate through the file string, extracting the base and adding it to
-	# the Array Ref of genomic locations
-	foreach my $index_file (@$genomic_index) {
-		if ($index_file =~ qr/($base_regex)(.+?)\.bed$/ ) {
-			push(@$genomic_locations, $2);
-		} else {
-			croak "There was a problem using regular expressions to extract the location from the file $index_file\n\n";
-		}
-	}
-
-	return $genomic_locations;
-
-}
-
 1;
-
-__END__

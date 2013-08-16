@@ -20,6 +20,7 @@ package PeaksToGenes::Database 0.001;
 
 use Moose::Role;
 use Carp;
+use Parallel::ForkManager;
 use FindBin;
 use lib "$FindBin::Bin/../lib";
 use PeaksToGenes::Schema;
@@ -53,10 +54,10 @@ This Moose attribute holds the DBI connection to the PeaksToGenes database.
 
 =cut
 
-has schema	=>	(
-    is			=>	'ro',
-    isa			=>	'PeaksToGenes::Schema',
-    writer		=>	'_set_schema',
+has schema  =>  (
+    is          =>  'ro',
+    isa         =>  'PeaksToGenes::Schema',
+    writer      =>  '_set_schema',
     predicate   =>  'has_schema',
 );
 
@@ -71,7 +72,7 @@ sub _define_schema  {
     my $self = shift;
     my $dsn = "dbi:SQLite:$FindBin::Bin/../db/peakstogenes.db";
     my $schema = PeaksToGenes::Schema->connect($dsn, '', '', {
-            cascade_delete	=>	1
+            cascade_delete  =>  1
         }
     );
     return $schema;
@@ -170,6 +171,59 @@ sub _get_experiment_names   {
     }
 
     return $installed_experiments_hash;
+}
+
+=head2 transcripts
+
+This Moose attribute holds a Hash Ref of the transcript information stored in
+the PeaksToGenes database. This Hash Ref is indexed by genome string, RefSeq
+transcript ID and then has a Hash Ref of transcript info as the value.
+
+=cut
+
+has transcripts =>  (
+    is          =>  'ro',
+    isa         =>  'HashRef',
+    predicate   =>  'has_transcripts',
+    writer      =>  '_set_transcripts',
+);
+
+before  'transcripts'   =>  sub {
+    my $self = shift;
+    unless ($self->has_transcripts) {
+        $self->_set_transcripts($self->_get_transcripts);
+    }
+};
+
+=head2 _get_transcripts
+
+This private subroutine is called dynamically to interact with the PeaksToGenes
+database and extract the transcripts information. This subroutine returns a Hash
+Ref that is indexed by RefSeq accession with a Hash Ref containing the accession
+and the genome_id as a value.
+
+=cut
+
+sub _get_transcripts    {
+    my $self = shift;
+
+    # Pre-declare a Hash Ref to hold the transcripts information
+    my $transcript_hash = {};
+
+    # Create a result set for the Available Genome table
+    my $transcripts_rs = $self->schema->resultset('Transcript');
+
+    # Inflate the table
+    $transcripts_rs->result_class('DBIx::Class::ResultClass::HashRefInflator');
+
+    # Extract the RefSeq accession and table row ID for each transcript, storing
+    # the information in the transcript_hash.
+    while ( my $transcripts_hash = $transcripts_rs->next ) {
+        $transcript_hash->{$transcripts_hash->{genome_id}}{$transcripts_hash->{transcript}}
+        = $transcripts_hash;
+    }
+
+    return $transcript_hash;
 }
 
 =head2 chromosome_sizes
@@ -349,7 +403,158 @@ sub test_name   {
         croak "\n\nThe user-defined experiment name: " . $name . ". Is " .
         "already in use. Either delete those entries in the database or choose " .
         "another experiment name.\n\n";
-	}
+    }
+}
+
+=head2 parse_and_store
+
+This subroutine is the main function called by the PeaksToGenes::Annotate
+controller class. This function takes the following parameters as arguments:
+
+    A Hash Ref of binding information indexed by RefSeq transcript accession and relative location
+    The genome string
+    The name of the experiment
+
+This subroutine parses these information into an insert statement for DBIx and
+inserts the relevant information into the PeaksToGenes database. Nothing is
+returned by this function, but it will kill execution if there are problems.
+
+=cut
+
+sub parse_and_store {
+    my $self = shift;
+    my $binding_info = shift;
+    my $genome = shift;
+    my $experiment_name = shift;
+
+    # Copy the genome ID into a local variable
+    my $genome_id = $self->get_genome_id($genome);
+
+    # Pre-declare an Array Ref (and partially define it) inside of a Hash Ref to
+    # hold the insert lines for the tables in the PeaksToGenes database.
+    my $insert = {
+        genome_id                   =>  $genome_id,
+        experiment                  =>  $experiment_name,
+        gene_body_numbers_of_peaks  =>  [],
+        downstream_numbers_of_peaks =>  [],
+        upstream_numbers_of_peaks   =>  [],
+        transcript_numbers_of_peaks =>  [],
+    };
+
+    # Iterate through the genes defined as the first set of keys and create
+    # insertion statements for each gene that will be added to the main
+    # insertion table
+    foreach my $accession ( keys %{$binding_info} ) {
+
+        # Copy the transcript ID into a local variable
+        my $transcript_id =
+        $self->transcripts->{$genome_id}{$accession}{id};
+
+        # Make sure the transcript ID was found. If not, die.
+        unless ( $transcript_id ) {
+            croak "\n\nUnable to extract the transcript ID for $accession.\n\n";
+        }
+
+        # Pre-define a Hash Ref for each type of insert for this line
+        my $upstream_number_of_peaks_insert_line = {
+            gene        =>  $transcript_id,
+            genome_id   =>  $genome_id,
+        };
+
+        my $downstream_number_of_peaks_insert_line = {
+            gene        =>  $transcript_id,
+            genome_id   =>  $genome_id,
+        };
+
+        my $gene_body_number_of_peaks_insert_line = {
+            gene        =>  $transcript_id,
+            genome_id   =>  $genome_id,
+        };
+
+        my $transcript_number_of_peaks_insert_line = {
+            gene        =>  $transcript_id,
+            genome_id   =>  $genome_id,
+            '_3prime_utr_number_of_peaks'   =>
+            $binding_info->{$accession}{'_3prime_utr_number_of_peaks'},
+            '_5prime_utr_number_of_peaks'   =>
+            $binding_info->{$accession}{'_5prime_utr_number_of_peaks'},
+            '_exons_number_of_peaks'   =>
+            $binding_info->{$accession}{'_exons_number_of_peaks'},
+            '_introns_number_of_peaks'   =>
+            $binding_info->{$accession}{'_introns_number_of_peaks'},
+        };
+
+        # Use a C-style loop to add the upstream, downstream and gene body
+        # binding info to their respective Hash Refs
+        for ( my $i = 0; $i < 10; $i++ ) {
+
+            # Add the gene body info
+            my $gene_body_location_string = '_gene_body_' . ($i*10) . 
+            '_to_' . (($i+1)*10) . '_number_of_peaks';
+            $gene_body_number_of_peaks_insert_line->{$gene_body_location_string}
+            = $binding_info->{$accession}{$gene_body_location_string};
+
+            # Add the upstream binding info
+            my $upstream_location_string = '_' . ($i+1) .
+            '_steps_upstream_number_of_peaks';
+            $upstream_number_of_peaks_insert_line->{$upstream_location_string} =
+            $binding_info->{$accession}{$upstream_location_string};
+
+            # Add the downstream binding info
+            my $downstream_location_string = '_' . ($i+1) .
+            '_steps_downstream_number_of_peaks';
+            $downstream_number_of_peaks_insert_line->{$downstream_location_string} =
+            $binding_info->{$accession}{$downstream_location_string};
+        }
+
+        # Add the lines to the insert statement
+        push(@{$insert->{gene_body_numbers_of_peaks}},
+            $gene_body_number_of_peaks_insert_line
+        );
+        push(@{$insert->{upstream_numbers_of_peaks}},
+            $upstream_number_of_peaks_insert_line
+        );
+        push(@{$insert->{downstream_numbers_of_peaks}},
+            $downstream_number_of_peaks_insert_line
+        );
+        push(@{$insert->{transcript_numbers_of_peaks}},
+            $transcript_number_of_peaks_insert_line
+        );
+    }
+
+    # Use a transaction scope guard to rapidly insert the statement into the
+    # PeaksToGenes database.
+    my $guard = $self->schema->txn_scope_guard;
+
+    # Insert the statement
+    $self->schema->resultset('Experiment')->populate([$insert]);
+
+    # After the transaction is complete, it is necessary to explicitly
+    # commit the transaction
+    $guard->commit;
+}
+
+=head2 get_genome_id
+
+This subroutine is passed a genome string and returns the integer value that
+corresponds to the genome ID of the user-defined genome string. If the
+user-defined genome is not found the program dies and prints an error message to
+STDOUT.
+
+=cut
+
+sub get_genome_id   {
+    my $self = shift;
+    my $genome_string = shift;
+
+    # Access the Moose attribute installed_genomes to return the ID
+    if ( $self->installed_genomes->{$genome_string}{id} ) {
+        return $self->installed_genomes->{$genome_string}{id};
+    } else {
+        croak "\n\nCould not find the genome ID for the user-defined genome: " .
+        $genome_string . ". Please check that this genome has been " .
+        "installed.\n\n";
+    }
 }
 
 1;

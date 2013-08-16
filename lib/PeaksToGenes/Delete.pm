@@ -28,19 +28,20 @@ with 'PeaksToGenes::Database';
 
 sub seek_and_destroy {
 	my $self = shift;
+    my $experiment_name = shift;
 
 	# Create an experiment results set searching for the user-defined
 	# experiment name
 	my $experiment_result_set =
 	$self->schema->resultset('Experiment')->find(
 		{
-			experiment	=>	$self->name,
+			experiment	=>	$experiment_name,
 		}
 	);
 
 	if ( $experiment_result_set ) {
 
-		print "\n\nDeleting the ", $self->name, " data.\n\n";
+		print "\n\nDeleting the ", $experiment_name, " data.\n\n";
 
 		# Loop through the tables, and delete the rows where the data
 		# corresponds to the table
@@ -54,8 +55,8 @@ sub seek_and_destroy {
 		}
 		$experiment_result_set->delete;
 	} else {
-		croak "\n\nCould not find the experiment defined: " . $self->name .
-		". Please check that you have entered the correct name.\n\n";
+        croak "\n\nCould not find the experiment defined: " . $experiment_name .
+        ". Please check that you have entered the correct name.\n\n";
 	}
 }
 
