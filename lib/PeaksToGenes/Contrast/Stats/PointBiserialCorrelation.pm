@@ -18,7 +18,7 @@
 
 package PeaksToGenes::Contrast::Stats::PointBiserialCorrelation 0.001;
 
-use Moose;
+use Moose::Role;
 use Carp;
 use Parallel::ForkManager;
 use Data::Dumper;

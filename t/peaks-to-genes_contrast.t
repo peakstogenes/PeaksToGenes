@@ -55,6 +55,24 @@ BEGIN   {
     isa_ok($all_data->{_3_steps_upstream_number_of_peaks}, 'HASH');
     isa_ok($all_data->{_7_steps_downstream_number_of_peaks}, 'HASH');
     isa_ok($all_data->{_introns_number_of_peaks}, 'HASH');
+
+    # Run the separate_binding_regions_by_gene_lists subroutine and make sure
+    # the Hash Ref of data is returned correctly.
+    my $separated_binding_data =
+    $dynamic_contrast_no_tests->separate_binding_regions_by_gene_lists(
+        $all_data,
+        {
+            test_genes          =>  $dynamic_contrast_no_tests->valid_test_genes,
+            background_genes    =>  $dynamic_contrast_no_tests->valid_background_genes,
+        },
+    );
+    isa_ok($separated_binding_data, 'HASH');
+    isa_ok($separated_binding_data->{_gene_body_40_to_50_number_of_peaks}{test_genes},
+        'ARRAY'
+    );
+    isa_ok($separated_binding_data->{_gene_body_40_to_50_number_of_peaks}{background_genes},
+        'ARRAY'
+    );
 }
 
 done_testing();

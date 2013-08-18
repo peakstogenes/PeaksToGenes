@@ -129,7 +129,7 @@ sub all_regions {
     }
 
 	# Pre-declare a Hash Ref to hold the genomic regions data
-	my $genomic_regions_all_data = {};
+	my $all_binding_hash = {};
 
     # Iterate through the tables defined in the table_dispatch attribute
     foreach my $table ( keys %{$self->table_dispatch} ) {
@@ -149,23 +149,25 @@ sub all_regions {
         while ( my $experiment_hash = $experiment_rs->next ) {
 
             # Iterate through the column types and add the data to the
-            # genomic_regions_all_data Hash Ref
+            # all_binding_hash Hash Ref
             foreach my $location ( @{$self->table_dispatch->{$table}} ) {
                 if ( defined $experiment_hash->{$location} ) {
                     
                     # Add the data indexed by the transcript ID
-                    $genomic_regions_all_data->{$location}{$experiment_hash->{gene}} = $experiment_hash->{$location};
+                    $all_binding_hash->{$location}{$experiment_hash->{gene}} = $experiment_hash->{$location};
                 }
             }
         }
     }
 
-	return $genomic_regions_all_data;
+	return $all_binding_hash;
 }
 
 =head2 separate_binding_regions_by_gene_lists
 
-This subroutine is passed the Hash Ref of binding information produced by running the all_regions subroutine and a Hash Ref of gene lists (that are Hash Refs) defined as:
+This subroutine is passed the Hash Ref of binding information produced by
+running the all_regions subroutine and a Hash Ref of gene lists (that are Hash
+Refs) defined as:
 
     test_genes          =>  HashRef of RefSeq IDs and PtG IDs
     background_genes    =>  HashRef of RefSeq IDs and PtG IDs
@@ -186,74 +188,119 @@ sub separate_binding_regions_by_gene_lists {
         . " these Hash Refs.\n\n";
     }
 
+    # Pre-declare a Hash Ref to hold the binding data separated by test genes
+    # list and background genes list
+    my $genomic_regions_structure = {};
+
 	# Create an instance of Parallel::ForkManager with the number of
-	# threads allowed set to the number of processors defined by the user
-	my $pm = Parallel::ForkManager->new($self->processors);
+	# threads allowed set to use 34 parallel threads, which is equal to the
+    # number of relative genomic regions
+	my $pm = Parallel::ForkManager->new(34);
 
 	# Define a subroutine to be run at the end of each thread
 	$pm->run_on_finish(
 		sub {
 			my ($pid, $exit_code, $ident, $exit_signal, $core_dump,
 				$data_structure) = @_;
-			$genomic_regions_structure->{test_genes}{$data_structure->{'location'}}{$data_structure->{'table_type'}}
-			= $data_structure->{'test_genes_data'};
-			$genomic_regions_structure->{background_genes}{$data_structure->{'location'}}{$data_structure->{'table_type'}}
-			= $data_structure->{'background_genes_data'};
+
+            # Make sure that the correct data was returned
+            if ( $data_structure && $data_structure->{location} &&
+                $data_structure->{data_type} && $data_structure->{binding} ) {
+
+                # Add the data to the genomic_regions_structure
+                push
+                (@{$genomic_regions_structure->{$data_structure->{location}}{$data_structure->{data_type}}},
+                    @{$data_structure->{binding}}
+                );
+            }
 		}
 	);
 
-	foreach my $location ( keys %$genomic_regions_all_data ) {
-		foreach  my $table_type ( keys
-			%{$genomic_regions_all_data->{$location}} ) {
+    # Iterate through the relative genomic coordinates
+    foreach my $location ( keys %{$all_binding_hash} ) {
 
-			# Start a new thread if one is available
-			$pm->start and next;
+        # Iterate through the data types
+        foreach my $data_type ( keys %{$gene_lists_hash} ) {
 
-			# Pre-declare Array Refs for the test genes and background
-			# genes respectively
-			my $test_data = [];
-			my $background_data = [];
+            # Start a new thread if one is available
+            $pm->start and next;
 
-			my $column = $location . "_" . $table_type;
+            # Pre-declare an Array Ref to hold the enrichment values for binding
+            my $binding = [];
 
-			while ( my $location_result =
-				$genomic_regions_all_data->{$location}{$table_type}->next)
-			{
-				if (  $test_ids->{$location_result->{gene}} ) {
-					if ( $location_result->{$column} ) {
-						push(@$test_data, $location_result->{$column});
-					} else {
-						push(@$test_data, 0);
-					}
-				} elsif ( $background_ids->{$location_result->{gene}} ) {
-					if ( $location_result->{$column} ) {
-						push(@$background_data, $location_result->{$column});
-					} else {
-						push(@$background_data, 0);
-					}
-				}
-			}
+            # Iterate through the genes in the gene_lists_hash
+            foreach my $accession ( keys %{$gene_lists_hash->{$data_type}} ) {
 
-			# Fill the test and background gene lists with zeros for the
-			# genes that are not found in the PeaksToGenes database
-			for (my $i = @$test_data; $i < @{$self->test_genes}; $i++) {
-				push(@$test_data, 0);
-			}
-			for (my $i = @$background_data; $i <
-				@{$self->background_genes}; $i++) {
-				push(@$background_data, 0);
-			}
+                # Add the binding value for the corresponding accession to the
+                # binding Array Ref
+                push(@{$binding},
+                    $all_binding_hash->{$location}{$gene_lists_hash->{$data_type}{$accession}}
+                );
+            }
 
-			$pm->finish(0,
-				{
-					table_type				=>	$table_type,
-					location				=>	$location,
-					test_genes_data			=>	$test_data,
-					background_genes_data	=>	$background_data,
-				}
-			);
-		}
-	}
+            # Finish the thread and return the data to the thread manager
+            $pm->finish(0,
+                {
+                    location    =>  $location,
+                    data_type   =>  $data_type,
+                    binding     =>  $binding,
+                }
+            );
+        }
+    }
+
+#	foreach my $location ( keys %$all_binding_hash ) {
+#		foreach  my $table_type ( keys
+#			%{$all_binding_hash->{$location}} ) {
+#
+#			# Start a new thread if one is available
+#			$pm->start and next;
+#
+#			# Pre-declare Array Refs for the test genes and background
+#			# genes respectively
+#			my $test_data = [];
+#			my $background_data = [];
+#
+#			my $column = $location . "_" . $table_type;
+#
+#			while ( my $location_result =
+#				$all_binding_hash->{$location}{$table_type}->next)
+#			{
+#				if (  $test_ids->{$location_result->{gene}} ) {
+#					if ( $location_result->{$column} ) {
+#						push(@$test_data, $location_result->{$column});
+#					} else {
+#						push(@$test_data, 0);
+#					}
+#				} elsif ( $background_ids->{$location_result->{gene}} ) {
+#					if ( $location_result->{$column} ) {
+#						push(@$background_data, $location_result->{$column});
+#					} else {
+#						push(@$background_data, 0);
+#					}
+#				}
+#			}
+#
+#			# Fill the test and background gene lists with zeros for the
+#			# genes that are not found in the PeaksToGenes database
+#			for (my $i = @$test_data; $i < @{$self->test_genes}; $i++) {
+#				push(@$test_data, 0);
+#			}
+#			for (my $i = @$background_data; $i <
+#				@{$self->background_genes}; $i++) {
+#				push(@$background_data, 0);
+#			}
+#
+#			$pm->finish(0,
+#				{
+#					table_type				=>	$table_type,
+#					location				=>	$location,
+#					test_genes_data			=>	$test_data,
+#					background_genes_data	=>	$background_data,
+#				}
+#			);
+#		}
+#	}
 
 	$pm->wait_all_children;
 

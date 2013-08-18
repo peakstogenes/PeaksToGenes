@@ -18,7 +18,7 @@
 
 package PeaksToGenes::Contrast::Stats::ANOVA 0.001;
 
-use Moose;
+use Moose::Role;
 use Carp;
 use Parallel::ForkManager;
 use Statistics::ANOVA;

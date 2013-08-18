@@ -254,6 +254,19 @@ sub test_and_contrast {
     # for the user-defined experiment name
     my $genome_wide_binding = $self->all_regions($self->name);
 
+    # Run the separate_binding_regions_by_gene_lists subroutine imported from
+    # PeaksToGenes::Contrast::GenomicRegions to get Array Refs of binding
+    # enrichment data indexed in Hash Refs by relative genomic location as the
+    # primary keys and the type of data (test or background) as the secondary
+    # keys.
+    my $separated_binding_data = $self->separate_binding_regions_by_gene_lists(
+        $genome_wide_binding,
+        {
+            test_genes          =>  $self->valid_test_genes,
+            background_genes    =>  $self->valid_background_genes,
+        }
+    );
+
 #    # Create an instance of PeaksToGenes::Contrast::GenomicRegions and run
 #    # PeaksToGenes::Contrast::GenomicRegions::extract_genomic_regions to
 #    # return a Hash Ref containing two Hash Refs (one for the test and one
