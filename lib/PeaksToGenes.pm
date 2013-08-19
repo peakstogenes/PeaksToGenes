@@ -150,10 +150,10 @@ has wilcoxon    =>  (
     documentation   =>  'Contrast Mode only. Set this mode to run the Wilcoxon (Mann-Whitney) nonparametric ANOVA test in contrast mode',
 );
 
-has biserial    =>  (
+has fisher    =>  (
     is              =>  'ro',
     isa             =>  'Bool',
-    documentation   =>  'Contrast Mode only. Set this mode to calculate the point biserial correlation coefficient in contrast mode',
+    documentation   =>  'Contrast Mode only. Set this mode to run the Fisher\'s exact test in contrast mode',
 );
 
 has genome  =>  (
@@ -340,7 +340,7 @@ sub execute {
                 statistical_tests   =>  {
                     anova           =>  $self->anova,
                     wilcoxon        =>  $self->wilcoxon,
-                    point_biserial  =>  $self->biserial
+                    fisher          =>  $self->fisher
                 }
             );
 
@@ -356,7 +356,7 @@ sub execute {
                 statistical_tests   =>  {
                     anova           =>  $self->anova,
                     wilcoxon        =>  $self->wilcoxon,
-                    point_biserial  =>  $self->biserial
+                    fisher          =>  $self->fisher
                 }
             );
 
