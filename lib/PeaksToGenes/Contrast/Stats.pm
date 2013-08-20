@@ -24,8 +24,7 @@ use FindBin;
 use lib "$FindBin::Bin/../lib";
 use Data::Dumper;
 
-with 'PeaksToGenes::Contrast::Stats::PointBiserialCorrelation';
-with 'PeaksToGenes::Contrast::Stats::ANOVA';
+with 'PeaksToGenes::Contrast::Stats::Fisher';
 with 'PeaksToGenes::Contrast::Stats::Wilcoxon';
 
 =head2 run_statistical_tests
@@ -45,41 +44,31 @@ sub run_statistical_tests {
     my $binding_hash = shift;
     my $statistical_test_hash = shift;
     my $processors = shift;
+    my $fisher_threshold = shift;
 
     # Pre-declare a Hash Ref to hold the results of the statistical tests
     my $test_results = {};
 
     # If the Wilcoxon (Mann-Whitney) test has been set to run, run the
-    # Wilcoxon Rank-Sum test by running the rank_sum_test consumed by
-    # PeaksToGenes::Contrast::Stats::Wilcoxon
+    # Wilcoxon Rank-Sum test by running the peaks_to_genes_rank_sum_test
+    # consumed by PeaksToGenes::Contrast::Stats::Wilcoxon
     if ( $statistical_test_hash->{wilcoxon} ) {
 
-        $test_results->{wilcoxon} = $self->rank_sum_test(
+        $test_results->{wilcoxon} = $self->peaks_to_genes_rank_sum_test(
             $binding_hash,
-            $processors
+            $processors,
         );
     }
 
-    # If the Point Biserial Correlation test has been flagged for testing,
-    # use
-    # PeaksToGenes::Contrast::Stats::PointBiserialCorrelation::correlation_coefficient
-    # to run the test
-    if ( $statistical_test_hash->{point_biserial} ) {
+    # If the Fisher's exact test have been flagged for usage, run the
+    # peaks_to_genes_fishers_exact_test subroutine that is conumed from
+    # PeaksToGenes::Contrast::Stats::Fisher
+    if ( $statistical_test_hash->{fisher} ) {
 
-        $test_results->{'point_biserial'} = $self->correlation_coefficient(
+        $test_results->{'fisher'} = $self->peaks_to_genes_fishers_exact_test(
             $binding_hash,
-            $processors
-        );
-    }
-
-    # If the ANOVA test has been flagged for testing, use the
-    # PeaksToGenes::Contrast::Stats::ANOVA::fisher_anova subroutine to run
-    # the test
-    if ( $statistical_test_hash->{anova} ) {
-
-        $test_results->{'anova'} = $self->fisher_anova(
-            $binding_hash,
-            $processors
+            $processors,
+            $fisher_threshold,
         );
     }
 

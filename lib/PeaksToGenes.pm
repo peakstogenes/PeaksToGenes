@@ -138,22 +138,24 @@ has scaling_factor  =>  (
     documentation   =>  'Signal Ratio mode only. An optional factor, which is used to scale the number of Input reads. The product of the number of input reads and the scaling factor is used as the denominator when calculating the ratio of IP reads. Default: 1.',
 );
 
-has anova   =>  (
-    is              =>  'ro',
-    isa             =>  'Bool',
-    documentation   =>  'Contrast Mode only. Set this mode to run the ANOVA test in contrast mode',
-);
-
 has wilcoxon    =>  (
     is              =>  'ro',
     isa             =>  'Bool',
-    documentation   =>  'Contrast Mode only. Set this mode to run the Wilcoxon (Mann-Whitney) nonparametric ANOVA test in contrast mode',
+    documentation   =>  'Contrast Mode only. Set this mode to run the Wilcoxon (Mann-Whitney) nonparametric test in contrast mode',
 );
 
 has fisher    =>  (
     is              =>  'ro',
     isa             =>  'Bool',
     documentation   =>  'Contrast Mode only. Set this mode to run the Fisher\'s exact test in contrast mode',
+);
+
+has fisher_threshold    =>  (
+    is              =>  'ro',
+    isa             =>  'Num',
+    documentation   =>  'Constrast Mode only. Set this floating point to define a threshold at which enrichment values will be separated into \'bound\' and \'unbound\', respectively.',
+    predicate       =>  'has_fisher_threshold',
+    writer          =>  '_set_fisher_threshold',
 );
 
 has genome  =>  (
@@ -173,6 +175,14 @@ has step_size   =>  (
     "bodies and to normalize the length of intra-gene intervals to. By default "
     . "this value is dynamically generated based on the genome. (Update mode "
     . "only)",
+);
+
+has full_enrichment =>  (
+    is              =>  'ro',
+    isa             =>  'Bool',
+    documentation   =>  "Signal Ratio mode only. Set this value if you want to "
+    .  "index negative enrichment values as well as positive enrichment values."
+    . " By default, enrichment ratios less than one are reported as one.",
 );
 
 has bed_file    =>  (
@@ -214,6 +224,7 @@ has 'test_genes'    =>  (
 has 'background_genes'  =>  (
     is              =>  'ro',
     isa             =>  'Str',
+    predicate       =>  'has_background_genes',
     documentation   =>  " Contrast Mode only. (Optional) The file path to the list of RefSeq accessions (genes) you wish to extract from the database as the background set. By defualt, the inverse (rest of the genome) from the list of test genes will be used as the background unless this flag is set",
 );
 
@@ -323,41 +334,45 @@ sub execute {
 
         # Run in contrast mode
 
+        # Determine if the fisher_threshold has been set. If not, set this value
+        # to zero. If this value has not been set, it is assumed that any value
+        # greater than zero is considered binding (which would be true in the
+        # case of peaks-derived data).
+        unless ( $self->has_fisher_threshold ) {
+            $self->_set_fisher_threshold(0);
+        }
+
         # Create an instance of PeaksToGenes::Contrast and run
         # PeaksToGenes::Contrast::test_and_contrast to execute the
         # statistical testing defined by the user. Depending on whether the
         # user has specified a background gene list, this option will be
         # specified when creating the PeaksToGenes::Contrast object.
-        if ( $self->background_genes ) {
+        if ( $self->has_background_genes ) {
             my $contrast = PeaksToGenes::Contrast->new(
-                schema              =>  $self->schema,
-                genome              =>  $self->genome,
                 name                =>  $self->name,
                 test_genes_fh       =>  $self->test_genes,
                 background_genes_fh =>  $self->background_genes,
                 contrast_name       =>  $self->contrast_name,
                 processors          =>  $self->processors,
                 statistical_tests   =>  {
-                    anova           =>  $self->anova,
                     wilcoxon        =>  $self->wilcoxon,
                     fisher          =>  $self->fisher
-                }
+                },
+                fisher_threshold    =>  $self->fisher_threshold,
             );
 
             $contrast->test_and_contrast;
         } else {
             my $contrast = PeaksToGenes::Contrast->new(
-                schema              =>  $self->schema,
-                genome              =>  $self->genome,
                 name                =>  $self->name,
                 test_genes_fh       =>  $self->test_genes,
                 contrast_name       =>  $self->contrast_name,
                 processors          =>  $self->processors,
                 statistical_tests   =>  {
-                    anova           =>  $self->anova,
                     wilcoxon        =>  $self->wilcoxon,
                     fisher          =>  $self->fisher
-                }
+                },
+                fisher_threshold    =>  $self->fisher_threshold,
             );
 
             $contrast->test_and_contrast;
@@ -378,6 +393,7 @@ sub execute {
             name            =>  $self->name,
             genome          =>  $self->genome,
             processors      =>  $self->processors,
+            full_enrichment =>  $self->full_enrichment,
         );
 
         $signal_ratio->index_signal_ratio;

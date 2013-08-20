@@ -41,6 +41,7 @@ This subroutine is passed the following arguments:
     A string for the current genome
     An integer value for the number of processors being used
     A floating point variable for the scaling factor to be used
+    A Boolean value that determines whether full enrichment scores will be reported
 
 And returns a Hash Ref of enrichment values indexed by transcript accession and
 relative genomic location column name.
@@ -54,6 +55,7 @@ sub annotate_signal_ratio {
     my $genome = shift;
     my $processors = shift;
     my $scaling_factor = shift;
+    my $full_enrichment = shift;
 
     # Extract the length of the step size used for this genome
     my ($ucsc, $step_size) = split(/-/, $genome);
@@ -142,8 +144,22 @@ sub annotate_signal_ratio {
 
                         # Make sure the enrichment is a positive number
                         if ( $enrichment > 0 ) {
-                            $indexed_signal_ratios->{$gene}{$data_structure->{index_column}}
-                            = log($enrichment) / log(2);
+
+                            # Test to see if full_enrichment has been set by the
+                            # user. 
+                            if ( $full_enrichment ) {
+                                $indexed_signal_ratios->{$gene}{$data_structure->{index_column}}
+                                = log($enrichment) / log(2);
+
+                            } else {
+                                if ( $enrichment >= 1 ) {
+                                    $indexed_signal_ratios->{$gene}{$data_structure->{index_column}}
+                                    = log($enrichment) / log(2);
+                                } else {
+                                    $indexed_signal_ratios->{$gene}{$data_structure->{index_column}}
+                                    = 0;
+                                }
+                            }
                         } else {
                             $indexed_signal_ratios->{$gene}{$data_structure->{index_column}}
                             = 0;
@@ -165,9 +181,28 @@ sub annotate_signal_ratio {
                                 $scaling_factor) /
                             $data_structure->{window_sizes}[$index_gene]
                         );
+
+                        # Test to see if the enrichment value is a positive
+                        # value
                         if ( $enrichment > 0 ) {
-                            $indexed_signal_ratios->{$data_structure->{genes}[$index_gene]}{$data_structure->{index_column}}
-                            = log($enrichment) / log(2);
+
+                            # Test to see if full_enrichment has been set by the
+                            # user
+                            if ( $full_enrichment ) {
+                                $indexed_signal_ratios->{$data_structure->{genes}[$index_gene]}{$data_structure->{index_column}}
+                                = log($enrichment) / log(2);
+                            } else {
+
+                                # Test to see if the enrichment is greater than
+                                # 1
+                                if ( $enrichment >= 1 ) {
+                                    $indexed_signal_ratios->{$data_structure->{genes}[$index_gene]}{$data_structure->{index_column}}
+                                    = log($enrichment) / log(2);
+                                } else {
+                                    $indexed_signal_ratios->{$data_structure->{genes}[$index_gene]}{$data_structure->{index_column}}
+                                    = 0;
+                                }
+                            }
                         } else {
                             $indexed_signal_ratios->{$data_structure->{genes}[$index_gene]}{$data_structure->{index_column}}
                             = 0;

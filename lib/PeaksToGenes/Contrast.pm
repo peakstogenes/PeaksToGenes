@@ -21,15 +21,13 @@ use Moose;
 use Carp;
 use FindBin;
 use lib "$FindBin::Bin/../lib";
-use PeaksToGenes::Contrast::Stats;
 use PeaksToGenes::Contrast::ParseStats;
 use PeaksToGenes::Contrast::Aggregate;
 use PeaksToGenes::Contrast::Out;
 use Data::Dumper;
 
 with 'PeaksToGenes::Database', 'PeaksToGenes::Contrast::Genes',
-'PeaksToGenes::Contrast::GenomicRegions',
-'PeaksToGenes::Contrast::Stats::Wilcoxon';
+'PeaksToGenes::Contrast::GenomicRegions', 'PeaksToGenes::Contrast::Stats';
 
 =head1 NAME
 
@@ -138,7 +136,6 @@ has statistical_tests   =>  (
     default         =>  sub {
         my $self = shift;
         return {
-            anova           =>  0,
             wilcoxon        =>  0,
             point_biserial  =>  0,
         };
@@ -156,6 +153,21 @@ value that must be greater than 0. By default this value is set to 1.
 has processors  =>  (
     is          =>  'ro',
     isa         =>  'Int',
+    default     =>  1,
+);
+
+=head2 fisher_threshold
+
+This Moose attribute holds the floating point value at which binding ratios will
+be separated into "bound" and "unbound" for the Fisher exact test. By default,
+this value is set to 1, which will separate regions with one or more peaks from
+regions that have no peaks.
+
+=cut
+
+has fisher_threshold    =>  (
+    is          =>  'ro',
+    isa         =>  'Num',
     default     =>  1,
 );
 
@@ -250,6 +262,9 @@ PeaksToGenes main module in the form of an Array Ref.
 sub test_and_contrast {
     my $self = shift;
 
+    # Pre-declare a Hash Ref to hold the results of any statistical tests run
+    my $results = {};
+
     # Run the 'all_regions' function imported from
     # PeaksToGenes::Contrast::GenomicRegions to get a Hash Ref of all binding
     # for the user-defined experiment name
@@ -268,9 +283,16 @@ sub test_and_contrast {
         }
     );
 
-    # If the Boolean value for running the Wilcoxon Rank Sum Test is true, run
-    # the 'peaks_to_genes_rank_sum_test' subroutine consumed from
-    # PeaksToGenes::Contrast::Stats::Wilcoxon
+    # Run the 'run_statistical_tests' function consumed from
+    # PeaksToGenes::Contrast::Stats, which will run any statistical tests
+    # defined by the user
+    my $statistics_results = $self->run_statistical_tests(
+        $separated_binding_data,
+        $self->statistical_tests,
+        $self->processors,
+        $self->fisher_threshold,
+    );
+
 
 #    # Create an instance of PeaksToGenes::Contrast::GenomicRegions and run
 #    # PeaksToGenes::Contrast::GenomicRegions::extract_genomic_regions to

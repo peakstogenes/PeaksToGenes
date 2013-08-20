@@ -30,7 +30,7 @@ BEGIN   {
     # Create an instance of PeaksToGenes::Contrast and test to make sure the
     # object was properly created
     my $dynamic_contrast_no_tests = PeaksToGenes::Contrast->new(
-        name            =>  'msl2_s2_cells',
+        name            =>  'msl2_s2_cells_pos',
         processors      =>  4,
         test_genes_fh   =>
         "$FindBin::Bin/../Temp_Data/xchrom_responsive_2_0.csv",
@@ -51,7 +51,7 @@ BEGIN   {
     # Run the 'all_data' function exported from
     # PeaksToGenes::Contrast::GenomicRegions and make sure a Hash Ref of Hash
     # Refs is returned
-    my $all_data = $dynamic_contrast_no_tests->all_regions('msl2_s2_cells');
+    my $all_data = $dynamic_contrast_no_tests->all_regions('msl2_s2_cells_pos');
     isa_ok($all_data, 'HASH');
     isa_ok($all_data->{_gene_body_40_to_50_number_of_peaks}, 'HASH');
     isa_ok($all_data->{_3_steps_upstream_number_of_peaks}, 'HASH');
@@ -75,10 +75,19 @@ BEGIN   {
     isa_ok($separated_binding_data->{_gene_body_40_to_50_number_of_peaks}{background_genes},
         'ARRAY'
     );
-    print Dumper
-    $dynamic_contrast_no_tests->peaks_to_genes_rank_sum_test(
+#    print Dumper
+#    $dynamic_contrast_no_tests->peaks_to_genes_rank_sum_test(
+#        $separated_binding_data,
+#        4
+#    );
+    print Dumper $dynamic_contrast_no_tests->run_statistical_tests(
         $separated_binding_data,
-        4
+        {
+            fisher      =>  1,
+            wilcoxon    =>  1,
+        },
+        4,
+        15,
     );
 }
 

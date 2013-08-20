@@ -117,6 +117,18 @@ has processors	=>	(
     default     =>  1,
 );
 
+=head2 full_enricnment
+
+This Moose attribute holds the Boolean value for whether the user would like to
+use the full enrichment values or not.
+
+=cut
+
+has full_enricnment =>  (
+    is          =>  'ro',
+    isa         =>  'Bool',
+);
+
 =head2 index_signal_ratio
 
 This subroutine is called and runs the main functions for the signal ratio
@@ -139,7 +151,8 @@ sub index_signal_ratio {
         $self->sorted_input_file,
         $self->genome,
         $self->processors,
-        $self->scaling_factor
+        $self->scaling_factor,
+        $self->full_enricnment,
     );
 
     # Run the remove_temporary_files subroutine to remove the reads files that
