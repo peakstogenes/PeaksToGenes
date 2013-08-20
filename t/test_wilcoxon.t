@@ -307,7 +307,7 @@ BEGIN {
     print "Z-score: ", $z, "\n";
 
     # Determine the P-value
-    my $pval = 2 * (1 - gsl_cdf_ugaussian_P($z));
+    my $pval = 2 * (1 - gsl_cdf_ugaussian_P($z->copy()->babs()));
     print "P-value: ", $pval, "\n";
 }
 

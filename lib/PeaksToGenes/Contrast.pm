@@ -28,7 +28,8 @@ use PeaksToGenes::Contrast::Out;
 use Data::Dumper;
 
 with 'PeaksToGenes::Database', 'PeaksToGenes::Contrast::Genes',
-'PeaksToGenes::Contrast::GenomicRegions';
+'PeaksToGenes::Contrast::GenomicRegions',
+'PeaksToGenes::Contrast::Stats::Wilcoxon';
 
 =head1 NAME
 
@@ -266,6 +267,10 @@ sub test_and_contrast {
             background_genes    =>  $self->valid_background_genes,
         }
     );
+
+    # If the Boolean value for running the Wilcoxon Rank Sum Test is true, run
+    # the 'peaks_to_genes_rank_sum_test' subroutine consumed from
+    # PeaksToGenes::Contrast::Stats::Wilcoxon
 
 #    # Create an instance of PeaksToGenes::Contrast::GenomicRegions and run
 #    # PeaksToGenes::Contrast::GenomicRegions::extract_genomic_regions to

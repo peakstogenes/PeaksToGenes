@@ -34,6 +34,8 @@ BEGIN   {
         processors      =>  4,
         test_genes_fh   =>
         "$FindBin::Bin/../Temp_Data/xchrom_responsive_2_0.csv",
+        background_genes_fh   =>
+        "$FindBin::Bin/../Temp_Data/xchrom_unresponsive_2_0.csv",
         contrast_name   =>
         "MSL2_binding_response_to_MSL2_RNAi_Dynamic_Background",
     );
@@ -72,6 +74,11 @@ BEGIN   {
     );
     isa_ok($separated_binding_data->{_gene_body_40_to_50_number_of_peaks}{background_genes},
         'ARRAY'
+    );
+    print Dumper
+    $dynamic_contrast_no_tests->peaks_to_genes_rank_sum_test(
+        $separated_binding_data,
+        4
     );
 }
 
