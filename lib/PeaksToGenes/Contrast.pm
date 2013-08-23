@@ -26,8 +26,11 @@ use PeaksToGenes::Contrast::Aggregate;
 use PeaksToGenes::Contrast::Out;
 use Data::Dumper;
 
-with 'PeaksToGenes::Database', 'PeaksToGenes::Contrast::Genes',
-'PeaksToGenes::Contrast::GenomicRegions', 'PeaksToGenes::Contrast::Stats';
+with 'PeaksToGenes::Database'; 
+with 'PeaksToGenes::Contrast::Genes';
+with 'PeaksToGenes::Contrast::GenomicRegions'; 
+with 'PeaksToGenes::Contrast::Stats';
+with 'PeaksToGenes::Contrast::Aggregate';
 
 =head1 NAME
 
@@ -116,6 +119,7 @@ has contrast_name   =>  (
     is          =>  'ro',
     isa         =>  'Str',
     required    =>  1,
+    lazy        =>  1,
     default     =>  sub {
         croak "\n\nYou must set a contrast name to use this class.\n\n";
     },
@@ -168,7 +172,7 @@ regions that have no peaks.
 has fisher_threshold    =>  (
     is          =>  'ro',
     isa         =>  'Num',
-    default     =>  1,
+    default     =>  0,
 );
 
 =head2 valid_test_genes
@@ -249,8 +253,7 @@ that the peaks they are looking for are not in the database.
 
 Second, this subroutine checks each RefSeq accession given by the user to ensure
 that the given accession is indexed in the user-defined database. Each invalid
-accession is returned to the user in an error message at the end of the
-program's execution.
+accession is returned to the user in an error message during program execution.
 
 Finally, while iterating through and testing the possible RefSeq accessions,
 this program creates an aggregate of the number of peaks in each relative
@@ -261,9 +264,6 @@ PeaksToGenes main module in the form of an Array Ref.
 
 sub test_and_contrast {
     my $self = shift;
-
-    # Pre-declare a Hash Ref to hold the results of any statistical tests run
-    my $results = {};
 
     # Run the 'all_regions' function imported from
     # PeaksToGenes::Contrast::GenomicRegions to get a Hash Ref of all binding
@@ -293,6 +293,13 @@ sub test_and_contrast {
         $self->fisher_threshold,
     );
 
+    # Run the 'get_binding_stats' consumed from
+    # PeaksToGenes::Contrast::Aggregate to get the binding stats for each
+    # distribution
+    my $descriptive_stats = $self->get_binding_stats(
+        $separated_binding_data,
+        $self->processors
+    );
 
 #    # Create an instance of PeaksToGenes::Contrast::GenomicRegions and run
 #    # PeaksToGenes::Contrast::GenomicRegions::extract_genomic_regions to

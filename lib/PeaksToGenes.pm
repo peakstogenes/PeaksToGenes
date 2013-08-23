@@ -153,9 +153,9 @@ has fisher    =>  (
 has fisher_threshold    =>  (
     is              =>  'ro',
     isa             =>  'Num',
-    documentation   =>  'Constrast Mode only. Set this floating point to define a threshold at which enrichment values will be separated into \'bound\' and \'unbound\', respectively.',
+    documentation   =>  'Constrast Mode only. Set this floating point to define a threshold at which enrichment values will be separated into \'bound\' and \'unbound\', respectively.' .
+    ' By default, this value is set to zero.',
     predicate       =>  'has_fisher_threshold',
-    writer          =>  '_set_fisher_threshold',
 );
 
 has genome  =>  (
@@ -339,7 +339,7 @@ sub execute {
         # greater than zero is considered binding (which would be true in the
         # case of peaks-derived data).
         unless ( $self->has_fisher_threshold ) {
-            $self->_set_fisher_threshold(0);
+            $self->fisher_threshold(0);
         }
 
         # Create an instance of PeaksToGenes::Contrast and run

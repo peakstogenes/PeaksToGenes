@@ -33,9 +33,10 @@ BEGIN   {
         name            =>  'msl2_s2_cells_pos',
         processors      =>  4,
         test_genes_fh   =>
-        "$FindBin::Bin/../Temp_Data/xchrom_responsive_2_0.csv",
+        "$FindBin::Bin/../Temp_Data/s2cells_msl2_paired_rep1_s_3_isoform_exp_2-fold_responsive_down_on_chrX.txt",
+#        "$FindBin::Bin/../Temp_Data/s2cells_msl2_paired_rep1_s_3_isoform_exp_2-fold_responsive_up_on_chrX.txt",
         background_genes_fh   =>
-        "$FindBin::Bin/../Temp_Data/xchrom_unresponsive_2_0.csv",
+        "$FindBin::Bin/../Temp_Data/s2cells_msl2_paired_rep1_s_3_isoform_exp_2-fold_unresponsive_on_chrX.txt",
         contrast_name   =>
         "MSL2_binding_response_to_MSL2_RNAi_Dynamic_Background",
     );
@@ -88,6 +89,11 @@ BEGIN   {
         },
         4,
         15,
+    );
+
+    print Dumper $dynamic_contrast_no_tests->get_binding_stats(
+        $separated_binding_data,
+        4
     );
 }
 
