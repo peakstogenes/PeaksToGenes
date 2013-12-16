@@ -19,6 +19,7 @@
 package PeaksToGenes::Contrast 0.001;
 use Moose;
 use Carp;
+use autodie;
 use FindBin;
 use lib "$FindBin::Bin/../lib";
 use PeaksToGenes::Contrast::ParseStats;
@@ -243,6 +244,63 @@ before  'valid_background_genes'    =>  sub {
     }
 };
 
+=head2 ordered_index
+
+This Moose attribute holds an ordered index of genomic locations that is
+dynamically defined when called.
+
+=cut
+
+has ordered_index   =>  (
+    is          =>  'ro',
+    isa         =>  'ArrayRef',
+    predicate   =>  'has_ordered_index',
+    writer      =>  '_set_ordered_index',
+);
+
+before  'ordered_index' =>  sub {
+    my $self = shift;
+    unless ($self->has_ordered_index) {
+        $self->_set_ordered_index($self->_get_ordered_index);
+    }
+};
+
+=head2 _get_ordered_index
+
+This private subroutine is called to dynamically define an ordered Array Ref of
+genomic locations.
+
+=cut
+
+sub _get_ordered_index  {
+    my $self = shift;
+
+    my $ordered_index = [];
+
+    push(@{$ordered_index},
+        '_5prime_utr_number_of_peaks',
+        '_exons_number_of_peaks',
+        '_introns_number_of_peaks',
+        '_3prime_utr_number_of_peaks'
+    );
+
+    for ( my $i = 0; $i < 100; $i+=10) {
+        push(@{$ordered_index},
+            '_gene_body_' . $i . '_to_' . ($i+10) . '_number_of_peaks'
+        );
+    }
+    for ( my $i = 1; $i <= 10; $i++ ) {
+        push(@{$ordered_index},
+            '_' . $i . '_steps_downstream_number_of_peaks'
+        );
+        unshift(@{$ordered_index},
+            '_' . $i . '_steps_upstream_number_of_peaks'
+        );
+    }
+
+    return $ordered_index;
+}
+
 =head2 test_and_contrast
 
 This subroutine is called by the main PeaksToGenes class.
@@ -300,6 +358,24 @@ sub test_and_contrast {
         $separated_binding_data,
         $self->processors
     );
+
+    my $table_to_print = [];
+
+    push(@{$table_to_print},
+        @{$self->parse_descriptive_stats($descriptive_stats)});
+
+    if ( $statistics_results ) {
+        push(@{$table_to_print},
+            @{$self->parse_statistical_tests($statistics_results)});
+    }
+
+    my $out_fh = $self->contrast_name . "_Stats_Table.txt";
+    if (-s $out_fh ) {
+        warn $out_fh . " exists. Overwriting...\n\n";
+    }
+    open my $out, ">", $out_fh;
+    print $out join("\n", @{$table_to_print});
+    close $out;
 
 #    # Create an instance of PeaksToGenes::Contrast::GenomicRegions and run
 #    # PeaksToGenes::Contrast::GenomicRegions::extract_genomic_regions to
@@ -378,6 +454,128 @@ sub test_and_contrast {
 #    print "\n\nPrinting statistical tables to files\n\n";
 #
 #    $out->print_tables;
+}
+
+=head2 parse_descriptive_stats
+
+This subroutine is always run to parse the descriptive statistics data structure
+into a table.
+
+=cut
+
+sub parse_descriptive_stats {
+    my $self = shift;
+    my $stat_hash = shift;
+
+    my $stat_table = [];
+
+    my $locations = ['Result Type'];
+    my $test_total = ['Total Number of Test Genes'];
+    my $bg_total = ['Total Number of Background Genes'];
+    my $test_mean = ['Test Genes Mean Enrichment'];
+    my $bg_mean = ['Background Genes Mean Enrichment'];
+    my $test_var = ['Test Genes Variance'];
+    my $bg_var = ['Background Genes Variance'];
+    my $test_sd = ['Test Genes Standard Deviation'];
+    my $bg_sd = ['Background Genes Standard Deviation'];
+    my $test_sem = ['Test Genes Standard Error of the Mean'];
+    my $bg_sem = ['Background Genes Standard Error of the Mean'];
+    my $test_min = ['Test Genes Min Enrichment'];
+    my $bg_min = ['Background Genes Min Enrichment'];
+    my $test_quar = ['Test Genes First Quartile'];
+    my $bg_quar = ['Background Genes First Quartile'];
+    my $test_med = ['Test Genes Median'];
+    my $bg_med = ['Background Genes Median'];
+    my $test_third = ['Test Genes Third Quartile'];
+    my $bg_third = ['Background Genes Third Quartile'];
+    my $test_max = ['Test Genes Max Enrichment'];
+    my $bg_max = ['Background Genes Max Enrichment'];
+
+    foreach my $location (@{$self->ordered_index}) {
+        unless ( $stat_hash->{$location} ) {
+            croak "$location not found";
+        }
+        push(@{$locations}, $location);
+        push(@{$test_total}, $stat_hash->{$location}{test_genes}{total});
+        push(@{$bg_total}, $stat_hash->{$location}{background_genes}{total});
+        push(@{$test_mean}, $stat_hash->{$location}{test_genes}{mean});
+        push(@{$bg_mean}, $stat_hash->{$location}{background_genes}{mean});
+        push(@{$test_var}, $stat_hash->{$location}{test_genes}{variance});
+        push(@{$bg_var}, $stat_hash->{$location}{background_genes}{variance});
+        push(@{$test_sd}, $stat_hash->{$location}{test_genes}{standard_deviation});
+        push(@{$bg_sd},
+            $stat_hash->{$location}{background_genes}{standard_deviation});
+        push(@{$test_sem}, $stat_hash->{$location}{test_genes}{SEM});
+        push(@{$bg_sem}, $stat_hash->{$location}{background_genes}{SEM});
+        push(@{$test_min}, $stat_hash->{$location}{test_genes}{min});
+        push(@{$bg_min}, $stat_hash->{$location}{background_genes}{min});
+        push(@{$test_quar}, $stat_hash->{$location}{test_genes}{first_quartile});
+        push(@{$bg_quar},
+            $stat_hash->{$location}{background_genes}{first_quartile});
+        push(@{$test_med}, $stat_hash->{$location}{test_genes}{median});
+        push(@{$bg_med}, $stat_hash->{$location}{background_genes}{median});
+        push(@{$test_third}, $stat_hash->{$location}{test_genes}{third_quartile});
+        push(@{$bg_third},
+            $stat_hash->{$location}{background_genes}{third_quartile});
+        push(@{$test_max}, $stat_hash->{$location}{test_genes}{max});
+        push(@{$bg_max}, $stat_hash->{$location}{background_genes}{max});
+    }
+
+    foreach my $array ($locations, $test_total, $bg_total, $test_mean, $bg_mean,
+        $test_var, $bg_var, $test_sd, $bg_sd, $test_sem, $bg_sem, $test_min,
+        $bg_min, $test_quar, $bg_quar, $test_med, $bg_med, $test_third,
+        $bg_third, $test_max, $bg_max) {
+        push(@{$stat_table}, join("\t", @{$array}));
+    }
+
+    return $stat_table;
+}
+
+=head2 parse_statistical_tests
+
+This subroutine is called to parse the statistical results into a table and
+print to file.
+
+=cut
+
+sub parse_statistical_tests {
+    my $self = shift;
+    my $stats_results = shift;
+
+    my $stats_table = [];
+
+    if ( $self->statistical_tests->{wilcoxon} ) {
+        push(@{$stats_table},
+            @{$self->parse_wilcoxon($stats_results->{wilcoxon})});
+    }
+
+    return $stats_table;
+}
+
+=head2 parse_wilcoxon
+
+This subroutine parses the wilcoxon data structure into a table for printing.
+
+=cut
+
+sub parse_wilcoxon  {
+    my $self = shift;
+    my $wilcoxon  = shift;
+
+    my $table = [];
+
+    my $z_scores = ['Wilcoxon Z-Score'];
+    my $p_values = ['Two-tailed P-value'];
+    foreach my $location (@{$self->ordered_index}) {
+        push(@{$z_scores}, $wilcoxon->{$location}{z_score});
+        push(@{$p_values}, $wilcoxon->{$location}{p_value});
+    }
+    push(@{$table},
+        join("\t", @{$z_scores}),
+        join("\t", @{$p_values}),
+    );
+
+    return $table;
 }
 
 __PACKAGE__->meta->make_immutable;
