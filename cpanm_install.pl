@@ -36,9 +36,9 @@ my $packages_to_install = [
 	'DBD::SQLite',
 	'DBD::mysql',
 	'Parallel::ForkManager',
-	'Statistics::ANOVA',
-	'Statistics::Test::WilcoxonRankSum',
-	'Statistics::Zed',
+    'Math::BigFloat',
+    'Math::GSL',
+    'Sort::Rank',
 	'Test::More',
 ];
 
